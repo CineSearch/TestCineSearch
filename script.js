@@ -4,11 +4,10 @@ const VIXSRC_URL = "vixsrc.to";
 const CORS_PROXIES_REQUIRING_ENCODING = [];
 
 const CORS_LIST = [
-  "corsproxy.io/",
-  "api.allorigins.win/raw?url=",
   "cors-anywhere.herokuapp.com/",
-  "thingproxy.freeboard.io/fetch/", // Alternativa per mobile
-  "cors.zimjs.com/" // Altro proxy mobile-friendly
+  "thingproxy.freeboard.io/fetch/",
+  "cors.zimjs.com/",
+  ...CORS_PROXIES_REQUIRING_ENCODING,
 ];
 
 // Impostiamo automaticamente corsproxy.io

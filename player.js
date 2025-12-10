@@ -185,46 +185,33 @@ async function loadEpisodes(tvId, seasonNum) {
 }
 
 // Carica il video
-// Sostituisci la funzione loadVideo() in player.js
 async function loadVideo(isMovie, id, season = null, episode = null) {
   showLoading(true);
 
   try {
-    // Configura proxy per dispositivo
-    const deviceType = DeviceCompatibility.getDeviceType();
-    
-    // Imposta proxy consigliato
-    const recommendedProxy = DeviceCompatibility.getRecommendedProxy();
-    document.getElementById("cors-select").value = recommendedProxy;
-    CORS = recommendedProxy;
-    
-    // Ottieni stream
-    const streamData = await getDirectStream(id, isMovie, season, episode);
+    // Assicurati che l'hook XHR sia installato
+    setupVideoJsXhrHook();
 
-    if (!streamData || !streamData.m3u8Url) {
-      throw new Error("Impossibile ottenere l'URL dello stream");
-    }
-
-    // Controlla compatibilità formato
-    if (!DeviceCompatibility.isFormatSupported(streamData.m3u8Url)) {
-      console.warn("⚠️ Formato potenzialmente non supportato su questo dispositivo");
-      
-      // Mostra avviso per iOS/Safari
-      if (deviceType.includes('safari') || deviceType.includes('ios')) {
-        showIOSWarning();
-        return;
-      }
-    }
-
-    const proxiedM3u8Url = DeviceCompatibility.applyDeviceProxy(streamData.m3u8Url);
-
-    // Reset player se esiste
+    // Se c'è già un player, rimuovilo completamente
     if (player) {
       player.dispose();
       player = null;
     }
 
-    // Crea elemento video
+    const streamData = await getDirectStream(
+      id,
+      isMovie,
+      season,
+      episode
+    );
+
+    if (!streamData || !streamData.m3u8Url) {
+      throw new Error("Impossibile ottenere l'URL dello stream");
+    }
+
+    const proxiedM3u8Url = applyCorsProxy(streamData.m3u8Url);
+
+    // Assicurati che l'elemento video esista
     let videoElement = document.getElementById("player-video");
     if (!videoElement) {
       const videoContainer = document.querySelector(".video-container");
@@ -236,53 +223,52 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
       videoElement.setAttribute("playsinline", "");
       videoElement.setAttribute("crossorigin", "anonymous");
       
-      // IMPORTANTE per iOS: aggiungi webkit-playsinline
-      if (deviceType.includes('ios')) {
-        videoElement.setAttribute("webkit-playsinline", "");
-      }
-      
       const loadingOverlay = document.getElementById("loading-overlay");
       videoContainer.insertBefore(videoElement, loadingOverlay);
     }
 
-    // Inizializza Video.js
-    player = videojs("player-video");
-    
-    // Configura per dispositivo
-    DeviceCompatibility.setupVideoJSForDevice(player);
+    player = videojs("player-video", {
+      controls: true,
+      fluid: true,
+      aspectRatio: "16:9",
+      playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+      html5: {
+        vhs: {
+          overrideNative: true,
+          bandwidth: 1000000,
+        },
+      },
+      controlBar: {
+        children: [
+          "playToggle",
+          "volumePanel",
+          "currentTimeDisplay",
+          "timeDivider",
+          "durationDisplay",
+          "progressControl",
+          "remainingTimeDisplay",
+          "playbackRateMenuButton",
+          "chaptersButton",
+          "descriptionsButton",
+          "subsCapsButton",
+          "audioTrackButton",
+          "qualitySelector",
+          "fullscreenToggle",
+        ],
+      },
+    });
 
     player.src({
       src: proxiedM3u8Url,
       type: "application/x-mpegURL",
-      withCredentials: false
     });
 
+    player.hlsQualitySelector();
+
     player.ready(function () {
-      // Gestione speciale per iOS/Safari
-      if (deviceType.includes('safari') || deviceType.includes('ios')) {
-        player.tech_.triggerReady();
-        
-        // Attendi che il metadata sia caricato
-        player.one('loadedmetadata', function() {
-          showLoading(false);
-          
-          // Mostra il pulsante play grande
-          player.bigPlayButton.show();
-        });
-      } else {
-        setupKeyboardShortcuts();
-        showLoading(false);
-        
-        // Prova a far partire la riproduzione
-        setTimeout(() => {
-          player.play().catch(e => {
-            console.log("Auto-play prevented, showing play button");
-            player.bigPlayButton.show();
-          });
-        }, 500);
-      }
+      setupKeyboardShortcuts();
+      showLoading(false);
       
-      // Traccia progresso
       trackVideoProgress(
         currentItem.id,
         currentItem.media_type || (currentItem.title ? "movie" : "tv"),
@@ -290,61 +276,24 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
         season,
         episode
       );
+
+      player.play().catch((e) => {
+        // // console.log("Auto-play prevented:", e);
+      });
     });
 
     player.on("error", function () {
-      const error = player.error();
-      console.error(`${deviceType} Player Error:`, error);
-      
-      // Mostra fallback per dispositivi problematici
-      if (deviceType === 'safari-ios' || deviceType === 'firestick-app') {
-        showDeviceFallback();
-      } else {
-        showError("Errore durante il caricamento del video. Prova a cambiare proxy CORS.");
-      }
+      showError("Errore durante il caricamento del video");
     });
 
+    player.on("loadeddata", function () {
+      // // console.log("✅ Video data loaded");
+    });
   } catch (err) {
-    console.error("Load Video Error:", err);
-    
-    // Fallback per errori
-    if (DeviceCompatibility.getDeviceType().includes('safari') || 
-        DeviceCompatibility.getDeviceType().includes('firestick')) {
-      showDeviceFallback();
-    } else {
-      showError("Impossibile caricare il video. Riprova più tardi.");
-    }
+    showError("Impossibile caricare il video. Riprova più tardi.");
   }
 }
 
-// Funzioni helper
-function showIOSWarning() {
-  const warningHTML = `
-    <div style="text-align: center; padding: 2rem; background: rgba(255,204,0,0.1); border-radius: 12px; margin: 1rem;">
-      <h3>⚠️ Nota per Safari/iOS</h3>
-      <p>Alcuni formati video potrebbero non funzionare correttamente su Safari.</p>
-      <p>Prova queste soluzioni:</p>
-      <ol style="text-align: left; margin: 1rem auto; max-width: 400px;">
-        <li>Usa il proxy "api.allorigins.win"</li>
-        <li>Assicurati di avere l'ultima versione di iOS</li>
-        <li>Prova con la app Brave o Chrome</li>
-        <li>Clicca manualmente sul pulsante play</li>
-      </ol>
-      <button onclick="continueAnyway()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin: 10px; cursor: pointer;">
-        Prova comunque
-      </button>
-    </div>
-  `;
-  
-  document.querySelector(".video-container").innerHTML += warningHTML;
-}
-
-function showDeviceFallback() {
-  const fallback = DeviceCompatibility.getFallbackPlayerHTML(currentItem);
-  if (fallback) {
-    document.querySelector(".video-container").innerHTML = fallback;
-  }
-}
 // Ottieni stream diretto
 async function getDirectStream(tmdbId, isMovie, season = null, episode = null) {
   try {
