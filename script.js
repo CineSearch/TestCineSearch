@@ -43,30 +43,8 @@ const endpoints = {
 };
 
 // Funzioni di utilità
-function checkLocalStorageSupport() {
-  try {
-    localStorage.setItem('test', 'test');
-    localStorage.removeItem('test');
-    return true;
-  } catch (e) {
-    console.error("❌ localStorage non supportato o pieno su iOS:", e);
-    return false;
-  }
-}
-
 function applyCorsProxy(url) {
-  // Per iOS, usa un proxy diverso se necessario
-  const userAgent = navigator.userAgent.toLowerCase();
-  const isIOS = /iphone|ipad|ipod/.test(userAgent);
-  
-  let CORS = document.getElementById("cors-select").value;
-  
-  // Se è iOS e il proxy corrente non funziona, prova con un altro
-  if (isIOS && CORS.includes("cors-anywhere")) {
-    CORS = "corsproxy.io/";
-  }
-  
-  // Resto del codice esistente...
+  const CORS = document.getElementById("cors-select").value;
   const requiresEncoding = CORS_PROXIES_REQUIRING_ENCODING.some(
     (proxy) => CORS === proxy
   );
@@ -127,27 +105,17 @@ function extractBaseUrl(url) {
 }
 
 function saveToStorage(name, value, days) {
-  if (!checkLocalStorageSupport()) {
-    console.warn("⚠️ localStorage non disponibile su iOS");
-    return false;
-  }
-  
   try {
-    // Limita la dimensione dei dati per iOS
-    if (JSON.stringify(value).length > 500000) { // 500KB max
-      console.warn("⚠️ Dati troppo grandi per iOS, troncati");
-      return false;
-    }
-    
     const data = {
       value: value,
       expires: new Date().getTime() + (days * 24 * 60 * 60 * 1000),
       created: new Date().getTime()
     };
     localStorage.setItem(name, JSON.stringify(data));
+    // console.log(`💾 localStorage salvato: ${name}=${value}`);
     return true;
   } catch (e) {
-    console.error("❌ Errore localStorage iOS:", e);
+    console.error("❌ Errore localStorage:", e);
     return false;
   }
 }

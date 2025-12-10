@@ -1,1180 +1,269 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CineSearch iOS</title>
-    <style>
-        /* RESET IOS */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-        }
-        
-        html {
-            -webkit-text-size-adjust: 100%;
-            font-size: 16px;
-        }
-        
-        body {
-            background: #000;
-            color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.5;
-            overflow-x: hidden;
-            overscroll-behavior: none;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        /* HEADER */
-        header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            padding: 10px 15px;
-            padding-top: env(safe-area-inset-top, 10px);
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            height: 60px;
-            border-bottom: 1px solid #333;
-        }
-        
-        .logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #FF375F;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .search-box {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            padding: 8px 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        #searchInput {
-            flex: 1;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1rem;
-            outline: none;
-            width: 100%;
-        }
-        
-        .fav-btn {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            color: #FFD700;
-            padding: 5px;
-            position: relative;
-        }
-        
-        .fav-count {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            background: #FF3B30;
-            color: white;
-            font-size: 0.7rem;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        /* MAIN CONTENT */
-        main {
-            margin-top: 60px;
-            padding-bottom: 60px;
-            padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-        }
-        
-        .section {
-            padding: 20px 15px;
-        }
-        
-        .section-title {
-            font-size: 1.3rem;
-            margin-bottom: 15px;
-            color: #fff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        /* MOVIE GRID PER IOS */
-        .movies-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 0 -5px;
-        }
-        
-        @media (min-width: 768px) {
-            .movies-grid {
-                grid-template-columns: repeat(4, 1fr);
-                gap: 15px;
-            }
-        }
-        
-        .movie-card {
-            background: #1a1a1a;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-            transition: transform 0.2s;
-            -webkit-touch-callout: none;
-        }
-        
-        .movie-card:active {
-            transform: scale(0.95);
-        }
-        
-        .movie-poster {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
-            display: block;
-        }
-        
-        .movie-info {
-            padding: 10px;
-        }
-        
-        .movie-title {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 5px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            line-height: 1.3;
-            height: 2.6em;
-        }
-        
-        .movie-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .movie-rating {
-            color: #FFD700;
-        }
-        
-        .fav-icon {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.6);
-            border: none;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            z-index: 2;
-            color: #FFD700;
-        }
-        
-        /* LOADING */
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-        
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #FF375F;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        /* BOTTOM NAV */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.95);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 1px solid #333;
-            padding: 10px 0;
-            padding-bottom: env(safe-area-inset-bottom, 10px);
-            display: flex;
-            justify-content: space-around;
-            z-index: 1000;
-        }
-        
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.8rem;
-            text-decoration: none;
-            padding: 5px;
-            border-radius: 8px;
-            background: none;
-            border: none;
-        }
-        
-        .nav-item.active {
-            color: #FF375F;
-        }
-        
-        .nav-icon {
-            font-size: 1.2rem;
-        }
-        
-        /* PLAYER */
-        #playerScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #000;
-            z-index: 2000;
-            display: none;
-            flex-direction: column;
-        }
-        
-        .player-header {
-            padding: 15px;
-            padding-top: env(safe-area-inset-top, 15px);
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            z-index: 10;
-        }
-        
-        .back-btn {
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 1.2rem;
-            padding: 5px;
-        }
-        
-        .player-title {
-            flex: 1;
-            font-size: 1.1rem;
-            color: #fff;
-        }
-        
-        .video-container {
-            flex: 1;
-            position: relative;
-            background: #000;
-        }
-        
-        #videoElement {
-            width: 100%;
-            height: 100%;
-            background: #000;
-        }
-        
-        /* SEARCH RESULTS */
-        .search-results {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            padding: 15px;
-        }
-        
-        @media (min-width: 768px) {
-            .search-results {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        
-        /* CATEGORIES */
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        .category-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            padding: 25px 15px;
-            text-align: center;
-            color: white;
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-        
-        .category-card:active {
-            opacity: 0.8;
-        }
-        
-        /* UTILITY */
-        .hidden {
-            display: none !important;
-        }
-        
-        .visible {
-            display: block !important;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .mt-20 {
-            margin-top: 20px;
-        }
-        
-        .mb-20 {
-            margin-bottom: 20px;
-        }
-        
-        /* ERROR MESSAGE */
-        .error-message {
-            background: rgba(255, 59, 48, 0.1);
-            border: 1px solid rgba(255, 59, 48, 0.3);
-            color: #FF3B30;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px;
-            text-align: center;
-        }
-        
-        /* EMPTY STATE */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-        
-        .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-        
-        /* MODAL */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 3000;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            padding-top: env(safe-area-inset-top, 20px);
-        }
-        
-        .modal-content {
-            background: #1a1a1a;
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: auto;
-            margin-bottom: auto;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        /* EPISODE SELECTOR */
-        .episodes-list {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .episode-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: none;
-            color: white;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-        
-        .episode-btn:active {
-            background: #FF375F;
-        }
-    </style>
-</head>
-<body>
-    <!-- HEADER -->
-    <header>
-        <div class="logo">
-            <span>🎬</span>
-            <span>CineSearch</span>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
+
+    <title>CineSearch</title>
+
+    <link href="https://vjs.zencdn.net/8.16.1/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/8.16.1/video.min.js"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header id="header">
+      <div class="logo">
+        <i class="fas fa-film"></i>
+        <span>CineSearch</span>
+      </div>
+      <div class="header-controls">
+        <div class="cors-selector">
+          <label class="cors-label" for="cors-select">🌐 CORS Proxy</label>
+          <select id="cors-select"></select>
         </div>
-        <div class="search-box">
-            <span>🔍</span>
-            <input type="search" 
-                   id="searchInput" 
-                   placeholder="Cerca film o serie..." 
-                   autocorrect="off" 
-                   autocomplete="off"
-                   autocapitalize="none">
+        <div class="search-container">
+          <input
+            type="text"
+            id="search"
+            placeholder="🔍 Cerca film, serie TV..."
+          />
         </div>
-        <button class="fav-btn" onclick="showFavorites()">
-            <span>⭐</span>
-            <span class="fav-count">0</span>
-        </button>
+      </div>
+      <div class="preferiti-counter" onclick="showPreferiti()" style="cursor: pointer;">
+        <span class="fav-icon">⭐</span>
+        <span id="preferiti-count">0</span>
+      </div>
     </header>
 
-    <!-- MAIN CONTENT -->
-    <main id="mainContent">
-        <!-- TRENDING SECTION -->
-        <section id="homeSection" class="section">
-            <h2 class="section-title">🔥 In tendenza</h2>
-            <div id="trendingGrid" class="movies-grid">
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <p>Caricamento...</p>
-                </div>
+    <main>
+      <div id="home">
+        <section class="hero">
+          <div class="hero-content">
+            <h1>Benvenuto su CineSearch</h1>
+            <p>La tua piattaforma per film e serie TV</p>
+            
+            <div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+              <button class="nav-btn" onclick="showAllMovies()">🎬 Tutti i Film</button>
+              <button class="nav-btn" onclick="showAllTV()">📺 Tutte le Serie TV</button>
+              <button class="nav-btn" onclick="showCategories()">🎭 Categorie</button>
+              <button class="nav-btn" onclick="showPreferiti()">⭐ Preferiti</button>
             </div>
+          </div>
+        </section>
+        
+        <section id="preferiti" style="display: none;">
+          <h2>⭐ Preferiti</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="preferiti-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="preferiti-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="preferiti-carousel">▶</button>
+          </div>
         </section>
 
-        <!-- MOVIES SECTION -->
-        <section id="moviesSection" class="section hidden">
-            <h2 class="section-title">🎬 Film popolari</h2>
-            <div id="moviesGrid" class="movies-grid"></div>
+        <section id="continua-visione" style="display: none;">
+          <h2>▶️ Continua visione</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="continua-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="continua-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="continua-carousel">▶</button>
+          </div>
+        </section>
+        
+        <section id="trending">
+          <h2>🔥 Trending</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="trending-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="trending-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="trending-carousel">▶</button>
+          </div>
         </section>
 
-        <!-- SERIES SECTION -->
-        <section id="seriesSection" class="section hidden">
-            <h2 class="section-title">📺 Serie TV popolari</h2>
-            <div id="seriesGrid" class="movies-grid"></div>
+        <section id="nowPlaying">
+          <h2>🎬 Ultimi Film</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="nowPlaying-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="nowPlaying-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="nowPlaying-carousel">▶</button>
+          </div>
         </section>
 
-        <!-- CATEGORIES SECTION -->
-        <section id="categoriesSection" class="section hidden">
-            <h2 class="section-title">🎭 Categorie</h2>
-            <div id="categoriesGrid" class="categories-grid"></div>
+        <section id="popularMovies">
+          <h2>⭐ Film Popolari</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="popularMovies-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="popularMovies-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="popularMovies-carousel">▶</button>
+          </div>
         </section>
 
-        <!-- FAVORITES SECTION -->
-        <section id="favoritesSection" class="section hidden">
-            <h2 class="section-title">⭐ I tuoi preferiti</h2>
-            <div id="favoritesGrid" class="movies-grid"></div>
+        <section id="onTheAir">
+          <h2>📺 Ultime Serie</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="onTheAir-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="onTheAir-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="onTheAir-carousel">▶</button>
+          </div>
         </section>
 
-        <!-- SEARCH SECTION -->
-        <section id="searchSection" class="section hidden">
-            <h2 class="section-title">🔍 Risultati ricerca</h2>
-            <div id="searchResults" class="search-results"></div>
+        <section id="popularTV">
+          <h2>🏆 Serie Popolari</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="popularTV-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="popularTV-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="popularTV-carousel">▶</button>
+          </div>
         </section>
+      </div>
+
+      <div id="results"></div>
+
+      <div id="player">
+        <div class="player-header">
+          <button class="back-btn" onclick="goBack()">← Torna indietro</button>
+        </div>
+
+        <div class="player-info" id="player-info">
+          <h1 id="player-title"></h1>
+          <div class="meta" id="player-meta"></div>
+          <div class="overview" id="player-overview"></div>
+        </div>
+
+        <div class="player-content">
+          <div class="video-container">
+            <div
+              id="episode-warning"
+              class="select-episode-warning"
+              style="display: none"
+            >
+              <div class="icon">📺</div>
+              <h3>Seleziona un episodio</h3>
+              <p>
+                Scegli una stagione e un episodio dalla lista a destra per
+                iniziare la riproduzione
+              </p>
+            </div>
+
+            <video
+              id="player-video"
+              class="video-js vjs-theme-vixflix vjs-big-play-centered"
+              controls
+              preload="auto"
+              playsinline
+              crossorigin="anonymous"
+            ></video>
+
+            <div
+              id="loading-overlay"
+              class="loading-overlay"
+              style="display: none"
+            >
+              <div class="loading"></div>
+              <div class="loading-text">Caricamento stream...</div>
+            </div>
+          </div>
+          <div
+            class="episode-selector"
+            id="episode-selector"
+            style="display: none"
+          >
+            <h3>Seleziona episodio</h3>
+            <div class="season-selector">
+              <label>Stagione:</label>
+              <select id="season-select"></select>
+            </div>
+            <div class="episodes-list" id="episodes-list"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- TUTTI I FILM -->
+      <section id="allMovies" style="display: none;">
+        <h2>🎬 Tutti i Film</h2>
+        <div class="carousel-wrapper">
+          <button class="arrow left" data-target="allMovies-carousel">◀</button>
+          <div class="carousel-container">
+            <div class="carousel" id="allMovies-carousel"></div>
+          </div>
+          <button class="arrow right" data-target="allMovies-carousel">▶</button>
+        </div>
+        <div class="load-more-container">
+          <button id="loadMoreMovies" class="load-more-btn" onclick="loadMoreMovies()">Carica più film</button>
+        </div>
+      </section>
+      
+      <!-- TUTTE LE SERIE TV -->
+      <section id="allTV" style="display: none;">
+        <h2>📺 Tutte le Serie TV</h2>
+        <div class="carousel-wrapper">
+          <button class="arrow left" data-target="allTV-carousel">◀</button>
+          <div class="carousel-container">
+            <div class="carousel" id="allTV-carousel"></div>
+          </div>
+          <button class="arrow right" data-target="allTV-carousel">▶</button>
+        </div>
+        <div class="load-more-container">
+          <button id="loadMoreTV" class="load-more-btn" onclick="loadMoreTV()">Carica più serie</button>
+        </div>
+      </section>
+      
+      <!-- CATEGORIE -->
+      <section id="categories" style="display: none;">
+        <div class="categories-grid" id="categories-grid"></div>
+      </section>
+      
+      <!-- SEZIONE PREFERITI -->
+      <section id="preferiti-section" style="display: none;">
+        <h2>⭐ I tuoi Preferiti</h2>
+        <div class="carousel-wrapper">
+          <button class="arrow left" onclick="scrollCarouselPreferiti(-1)">◀</button>
+          <div class="carousel-container">
+            <div class="carousel" id="preferiti-section-carousel"></div>
+          </div>
+          <button class="arrow right" onclick="scrollCarouselPreferiti(1)">▶</button>
+        </div>
+        <div class="preferiti-message" id="preferiti-message" style="text-align: center; padding: 2rem; color: #888;">
+          Aggiungi contenuti ai preferiti per vederli qui
+        </div>
+      </section>
     </main>
 
-    <!-- BOTTOM NAVIGATION -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" onclick="showSection('home')">
-            <span class="nav-icon">🏠</span>
-            <span>Home</span>
-        </button>
-        <button class="nav-item" onclick="showSection('movies')">
-            <span class="nav-icon">🎬</span>
-            <span>Film</span>
-        </button>
-        <button class="nav-item" onclick="showSection('series')">
-            <span class="nav-icon">📺</span>
-            <span>Serie</span>
-        </button>
-        <button class="nav-item" onclick="showSection('categories')">
-            <span class="nav-icon">🎭</span>
-            <span>Categorie</span>
-        </button>
-        <button class="nav-item" onclick="showSection('favorites')">
-            <span class="nav-icon">⭐</span>
-            <span>Preferiti</span>
-        </button>
-    </nav>
+    <!-- Includi tutti i file JavaScript in ORDINE CORRETTO -->
+    <script src="script.js"></script>          <!-- Primo: dichiara le variabili globali -->
+    <script src="api.js"></script>             <!-- Funzioni API -->
+    <script src="cors.js"></script>            <!-- Gestione CORS -->
+    <script src="preferiti.js"></script>       <!-- Gestione preferiti -->
+    <script src="continua-visione.js"></script> <!-- Continua visione -->
+    <script src="card.js"></script>            <!-- Creazione card -->
+    <script src="categorie.js"></script>       <!-- Categorie -->
+    <script src="film-serie.js"></script>      <!-- Film e serie -->
+    <script src="ricerca.js"></script>         <!-- Ricerca -->
+    <script src="player.js"></script>          <!-- Player (ultimo, usa le funzioni sopra) -->
 
-    <!-- PLAYER SCREEN -->
-    <div id="playerScreen" class="hidden">
-        <div class="player-header">
-            <button class="back-btn" onclick="closePlayer()">←</button>
-            <div class="player-title" id="playerTitle"></div>
-        </div>
-        <div class="video-container">
-            <video id="videoElement" 
-                   playsinline 
-                   webkit-playsinline 
-                   controls
-                   preload="metadata">
-                Il tuo browser non supporta il tag video.
-            </video>
-        </div>
-    </div>
-
-    <!-- EPISODE MODAL -->
-    <div id="episodeModal" class="modal hidden">
-        <div class="modal-content">
-            <h3 style="margin-bottom: 15px;">Seleziona episodio</h3>
-            <select id="seasonSelect" style="width: 100%; padding: 10px; margin-bottom: 15px; border-radius: 8px; background: #333; color: white; border: none;"></select>
-            <div id="episodesContainer" class="episodes-list"></div>
-            <button onclick="closeEpisodeModal()" style="margin-top: 20px; width: 100%; padding: 12px; background: #FF375F; color: white; border: none; border-radius: 8px;">Chiudi</button>
-        </div>
-    </div>
-
-    <script>
-        // CONFIGURAZIONE
-        const TMDB_API_KEY = 'f75aac685f3389aa89c4f8580c078a28';
-        
-        // STATO APPLICAZIONE
-        let currentSection = 'home';
-        let favorites = JSON.parse(localStorage.getItem('cineFavorites') || '[]');
-        let continueWatching = JSON.parse(localStorage.getItem('cineContinueWatching') || '{}');
-        let currentMovieData = null;
-
-        // INIZIALIZZAZIONE
-        document.addEventListener('DOMContentLoaded', async () => {
-            updateFavCount();
-            await initApp();
-            setupSearch();
-            setupEventListeners();
-        });
-
-        // INIZIALIZZAZIONE APP
-        async function initApp() {
-            try {
-                await Promise.all([
-                    loadTrending(),
-                    loadMovies(),
-                    loadSeries(),
-                    loadCategories()
-                ]);
-            } catch (error) {
-                console.error('Errore inizializzazione:', error);
-                showError('Impossibile caricare i contenuti');
-            }
-        }
-
-        // CARICAMENTO DATI TMDB
-        async function loadTrending() {
-            try {
-                const url = `https://api.themoviedb.org/3/trending/all/week?api_key=${TMDB_API_KEY}&language=it-IT`;
-                const response = await fetch(url);
-                const data = await response.json();
-                displayMovies(data.results.slice(0, 12), 'trendingGrid');
-            } catch (error) {
-                console.error('Errore caricamento trending:', error);
-            }
-        }
-
-        async function loadMovies() {
-            try {
-                const url = `https://api.themoviedb.org/3/movie/popular?api_key=${TMDB_API_KEY}&language=it-IT&page=1`;
-                const response = await fetch(url);
-                const data = await response.json();
-                displayMovies(data.results.slice(0, 12).map(m => ({...m, media_type: 'movie'})), 'moviesGrid');
-            } catch (error) {
-                console.error('Errore caricamento film:', error);
-            }
-        }
-
-        async function loadSeries() {
-            try {
-                const url = `https://api.themoviedb.org/3/tv/popular?api_key=${TMDB_API_KEY}&language=it-IT&page=1`;
-                const response = await fetch(url);
-                const data = await response.json();
-                displayMovies(data.results.slice(0, 12).map(tv => ({...tv, media_type: 'tv'})), 'seriesGrid');
-            } catch (error) {
-                console.error('Errore caricamento serie:', error);
-            }
-        }
-
-        function loadCategories() {
-            const categories = [
-                {id: 28, name: "Azione", icon: "💥", color: "#FF375F"},
-                {id: 35, name: "Commedia", icon: "😂", color: "#FFD700"},
-                {id: 27, name: "Horror", icon: "👻", color: "#8B4513"},
-                {id: 10749, name: "Romantico", icon: "❤️", color: "#FF1493"},
-                {id: 878, name: "Fantascienza", icon: "🚀", color: "#00BFFF"},
-                {id: 53, name: "Thriller", icon: "🔪", color: "#DC143C"},
-                {id: 12, name: "Avventura", icon: "🗺️", color: "#32CD32"},
-                {id: 16, name: "Animazione", icon: "🐭", color: "#FF69B4"},
-                {id: 14, name: "Fantasy", icon: "🧙‍♂️", color: "#9370DB"},
-                {id: 18, name: "Dramma", icon: "🎭", color: "#1E90FF"}
-            ];
-
-            const grid = document.getElementById('categoriesGrid');
-            grid.innerHTML = categories.map(cat => `
-                <div class="category-card" onclick="loadCategoryContent(${cat.id})" 
-                     style="background: linear-gradient(135deg, ${cat.color}99, ${cat.color}55);">
-                    <div style="font-size: 1.5rem; margin-bottom: 8px;">${cat.icon}</div>
-                    ${cat.name}
-                </div>
-            `).join('');
-        }
-
-        // DISPLAY FUNCTIONS
-        function displayMovies(movies, containerId) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-
-            if (movies.length === 0) {
-                container.innerHTML = '<div class="empty-state">Nessun contenuto disponibile</div>';
-                return;
-            }
-
-            container.innerHTML = movies.map(movie => createMovieCard(movie)).join('');
-        }
-
-        function createMovieCard(movie) {
-            const poster = movie.poster_path 
-                ? `https://image.tmdb.org/t/p/w342${movie.poster_path}`
-                : 'https://via.placeholder.com/150x225/333/fff?text=🎬';
-            
-            const title = movie.title || movie.name || 'Senza titolo';
-            const year = (movie.release_date || movie.first_air_date || '').substring(0, 4) || 'N/A';
-            const rating = movie.vote_average ? movie.vote_average.toFixed(1) : '-';
-            const isFavorite = favorites.includes(`${movie.media_type}-${movie.id}`);
-            
-            return `
-                <div class="movie-card" onclick="selectMovie(${movie.id}, '${movie.media_type}')">
-                    <button class="fav-icon" onclick="event.stopPropagation(); toggleFavorite(${movie.id}, '${movie.media_type}')">
-                        ${isFavorite ? '❤️' : '🤍'}
-                    </button>
-                    <img src="${poster}" 
-                         alt="${title}" 
-                         class="movie-poster"
-                         loading="lazy"
-                         onerror="this.src='https://via.placeholder.com/150x225/333/fff?text=🎬'">
-                    <div class="movie-info">
-                        <div class="movie-title">${title}</div>
-                        <div class="movie-meta">
-                            <span>${year}</span>
-                            <span class="movie-rating">⭐ ${rating}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // SELEZIONE FILM/SERIE
-        async function selectMovie(id, type) {
-            try {
-                showLoading();
-                
-                if (type === 'movie') {
-                    await playMovie(id);
-                } else {
-                    await showEpisodes(id);
-                }
-            } catch (error) {
-                console.error('Errore selezione:', error);
-                showError('Impossibile aprire il contenuto');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // RICERCA
-        function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            let searchTimeout;
-            
-            searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimeout);
-                const query = searchInput.value.trim();
-                
-                if (query.length < 2) {
-                    showSection('home');
-                    return;
-                }
-                
-                searchTimeout = setTimeout(() => performSearch(query), 500);
-            });
-            
-            // Previene submit su iOS
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                }
-            });
-        }
-
-        async function performSearch(query) {
-            try {
-                showLoading();
-                
-                const url = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&language=it-IT&query=${encodeURIComponent(query)}&page=1`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                const results = data.results.filter(item => 
-                    (item.media_type === 'movie' || item.media_type === 'tv') && 
-                    item.poster_path
-                ).slice(0, 18);
-                
-                displaySearchResults(results);
-                showSection('search');
-            } catch (error) {
-                console.error('Errore ricerca:', error);
-                showError('Errore durante la ricerca');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        function displaySearchResults(results) {
-            const container = document.getElementById('searchResults');
-            
-            if (results.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-icon">🔍</div>
-                        <p>Nessun risultato trovato</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = results.map(movie => createMovieCard(movie)).join('');
-        }
-
-        // PLAYBACK FUNCTIONS - VERSIONE SEMPLIFICATA PER IOS
-        async function playMovie(tmdbId) {
-            try {
-                // Per iOS, usiamo un approccio più semplice
-                const movieUrl = await getSimpleMovieUrl(tmdbId);
-                
-                if (movieUrl) {
-                    openVideoPlayer(movieUrl, `Film - ID: ${tmdbId}`);
-                } else {
-                    // Fallback: cerca su siti di streaming noti
-                    const fallbackUrl = await searchMovieOnline(tmdbId);
-                    if (fallbackUrl) {
-                        openVideoPlayer(fallbackUrl, `Film - ID: ${tmdbId}`);
-                    } else {
-                        showError('Film non trovato su servizi disponibili');
-                    }
-                }
-            } catch (error) {
-                console.error('Errore playMovie:', error);
-                showError('Impossibile riprodurre il film');
-            }
-        }
-
-        async function showEpisodes(tvId) {
-            try {
-                const seasons = await fetchSeasons(tvId);
-                if (seasons.length === 0) {
-                    showError('Nessuna stagione disponibile');
-                    return;
-                }
-                
-                currentMovieData = { id: tvId, type: 'tv' };
-                
-                // Popola select stagioni
-                const seasonSelect = document.getElementById('seasonSelect');
-                seasonSelect.innerHTML = seasons.map(s => 
-                    `<option value="${s.season_number}">Stagione ${s.season_number}</option>`
-                ).join('');
-                
-                // Carica episodi prima stagione
-                await loadEpisodesForSeason(tvId, 1);
-                
-                // Mostra modal
-                document.getElementById('episodeModal').classList.remove('hidden');
-                
-            } catch (error) {
-                console.error('Errore showEpisodes:', error);
-                showError('Impossibile caricare gli episodi');
-            }
-        }
-
-        async function loadEpisodesForSeason(tvId, season) {
-            try {
-                const episodes = await fetchEpisodes(tvId, season);
-                const container = document.getElementById('episodesContainer');
-                
-                container.innerHTML = episodes.map(ep => `
-                    <button class="episode-btn" onclick="playEpisode(${tvId}, ${season}, ${ep.episode_number})">
-                        ${ep.episode_number}
-                    </button>
-                `).join('');
-            } catch (error) {
-                console.error('Errore caricamento episodi:', error);
-            }
-        }
-
-        async function playEpisode(tvId, season, episode) {
-            try {
-                const episodeUrl = await getSimpleEpisodeUrl(tvId, season, episode);
-                
-                if (episodeUrl) {
-                    closeEpisodeModal();
-                    openVideoPlayer(episodeUrl, `Serie - S${season}E${episode}`);
-                } else {
-                    showError('Episodio non trovato');
-                }
-            } catch (error) {
-                console.error('Errore playEpisode:', error);
-                showError('Impossibile riprodurre episodio');
-            }
-        }
-
-        // URL SIMPLIFIED PER IOS
-        async function getSimpleMovieUrl(tmdbId) {
-            // Prova diversi approcci per iOS
-            const sources = [
-                `https://vidsrc.to/embed/movie/${tmdbId}`,
-                `https://www.2embed.cc/embed/${tmdbId}`,
-                `https://autoembed.co/movie/tmdb/${tmdbId}`
-            ];
-            
-            for (const source of sources) {
-                try {
-                    const test = await fetch(source);
-                    if (test.ok) {
-                        return source;
-                    }
-                } catch (e) {
-                    continue;
-                }
-            }
-            
-            return null;
-        }
-
-        async function getSimpleEpisodeUrl(tvId, season, episode) {
-            const sources = [
-                `https://vidsrc.to/embed/tv/${tvId}/${season}/${episode}`,
-                `https://www.2embed.cc/embedtv/${tvId}&s=${season}&e=${episode}`,
-                `https://autoembed.co/tv/tmdb/${tvId}-${season}-${episode}`
-            ];
-            
-            for (const source of sources) {
-                try {
-                    const test = await fetch(source);
-                    if (test.ok) {
-                        return source;
-                    }
-                } catch (e) {
-                    continue;
-                }
-            }
-            
-            return null;
-        }
-
-        // VIDEO PLAYER
-        function openVideoPlayer(url, title) {
-            document.getElementById('playerTitle').textContent = title;
-            const video = document.getElementById('videoElement');
-            
-            // Usa un iframe per i servizi di embedding
-            if (url.includes('embed') || url.includes('autoembed')) {
-                video.style.display = 'none';
-                const iframe = document.createElement('iframe');
-                iframe.src = url;
-                iframe.style.width = '100%';
-                iframe.style.height = '100%';
-                iframe.style.border = 'none';
-                iframe.allowFullscreen = true;
-                
-                const container = document.querySelector('.video-container');
-                container.innerHTML = '';
-                container.appendChild(iframe);
-            } else {
-                video.style.display = 'block';
-                video.src = url;
-            }
-            
-            document.getElementById('playerScreen').classList.remove('hidden');
-        }
-
-        function closePlayer() {
-            const video = document.getElementById('videoElement');
-            video.pause();
-            video.src = '';
-            
-            const container = document.querySelector('.video-container');
-            container.innerHTML = '<video id="videoElement" playsinline webkit-playsinline controls preload="metadata"></video>';
-            
-            document.getElementById('playerScreen').classList.add('hidden');
-        }
-
-        // CATEGORIES
-        async function loadCategoryContent(genreId) {
-            try {
-                showLoading();
-                
-                const url = `https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&language=it-IT&with_genres=${genreId}&sort_by=popularity.desc&page=1`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                // Sostituisci contenuto principale con risultati categoria
-                const resultsHTML = data.results.slice(0, 12).map(movie => 
-                    createMovieCard({...movie, media_type: 'movie'})
-                ).join('');
-                
-                const tempSection = document.createElement('section');
-                tempSection.className = 'section';
-                tempSection.innerHTML = `
-                    <button onclick="showSection('categories')" style="background: #FF375F; color: white; border: none; padding: 10px 20px; border-radius: 8px; margin-bottom: 15px;">← Torna alle categorie</button>
-                    <h2 class="section-title">🎭 Risultati categoria</h2>
-                    <div class="movies-grid">
-                        ${resultsHTML}
-                    </div>
-                `;
-                
-                document.getElementById('mainContent').innerHTML = '';
-                document.getElementById('mainContent').appendChild(tempSection);
-                
-            } catch (error) {
-                console.error('Errore caricamento categoria:', error);
-                showError('Impossibile caricare la categoria');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // FAVORITES
-        function toggleFavorite(id, type) {
-            const key = `${type}-${id}`;
-            const index = favorites.indexOf(key);
-            
-            if (index > -1) {
-                favorites.splice(index, 1);
-            } else {
-                favorites.push(key);
-            }
-            
-            localStorage.setItem('cineFavorites', JSON.stringify(favorites));
-            updateFavCount();
-            updateFavoriteIcons();
-            
-            // Mostra feedback visivo
-            showToast(index > -1 ? 'Rimosso dai preferiti' : 'Aggiunto ai preferiti');
-        }
-
-        function updateFavCount() {
-            const countEl = document.querySelector('.fav-count');
-            if (countEl) {
-                countEl.textContent = favorites.length;
-            }
-        }
-
-        function updateFavoriteIcons() {
-            document.querySelectorAll('.fav-icon').forEach(icon => {
-                // Potresti aggiungere logica per aggiornare le icone
-            });
-        }
-
-        function showFavorites() {
-            if (favorites.length === 0) {
-                showToast('Nessun preferito aggiunto');
-                return;
-            }
-            showSection('favorites');
-            
-            // Qui dovresti caricare i dettagli dei preferiti
-            const container = document.getElementById('favoritesGrid');
-            container.innerHTML = '<div class="empty-state"><div class="empty-icon">⭐</div><p>Carica i tuoi preferiti</p></div>';
-        }
-
-        // NAVIGATION
-        function showSection(sectionId) {
-            // Aggiorna navigation
-            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(item => {
-                if (item.onclick && item.onclick.toString().includes(sectionId)) {
-                    item.classList.add('active');
-                }
-            });
-            
-            // Nascondi tutte le sezioni
-            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
-            
-            // Mostra sezione richiesta
-            currentSection = sectionId;
-            const sectionMap = {
-                'home': 'homeSection',
-                'movies': 'moviesSection',
-                'series': 'seriesSection',
-                'categories': 'categoriesSection',
-                'favorites': 'favoritesSection',
-                'search': 'searchSection'
-            };
-            
-            const sectionToShow = document.getElementById(sectionMap[sectionId]);
-            if (sectionToShow) {
-                sectionToShow.classList.remove('hidden');
-            }
-            
-            // Scroll to top
-            window.scrollTo(0, 0);
-        }
-
-        // UTILITY FUNCTIONS
-        async function fetchSeasons(tvId) {
-            const url = `https://api.themoviedb.org/3/tv/${tvId}?api_key=${TMDB_API_KEY}&language=it-IT`;
-            const response = await fetch(url);
-            const data = await response.json();
-            return data.seasons?.filter(s => s.season_number > 0) || [];
-        }
-
-        async function fetchEpisodes(tvId, season) {
-            const url = `https://api.themoviedb.org/3/tv/${tvId}/season/${season}?api_key=${TMDB_API_KEY}&language=it-IT`;
-            const response = await fetch(url);
-            const data = await response.json();
-            return data.episodes || [];
-        }
-
-        function showLoading() {
-            // Mostra spinner
-            const spinner = document.createElement('div');
-            spinner.className = 'spinner';
-            spinner.id = 'globalSpinner';
-            spinner.style.position = 'fixed';
-            spinner.style.top = '50%';
-            spinner.style.left = '50%';
-            spinner.style.transform = 'translate(-50%, -50%)';
-            spinner.style.zIndex = '9999';
-            document.body.appendChild(spinner);
-        }
-
-        function hideLoading() {
-            const spinner = document.getElementById('globalSpinner');
-            if (spinner) {
-                spinner.remove();
-            }
-        }
-
-        function showError(message) {
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
-            errorDiv.style.position = 'fixed';
-            errorDiv.style.top = '100px';
-            errorDiv.style.left = '20px';
-            errorDiv.style.right = '20px';
-            errorDiv.style.zIndex = '9999';
-            
-            document.body.appendChild(errorDiv);
-            
-            setTimeout(() => {
-                errorDiv.remove();
-            }, 3000);
-        }
-
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.textContent = message;
-            toast.style.cssText = `
-                position: fixed;
-                bottom: 100px;
-                left: 20px;
-                right: 20px;
-                background: #FF375F;
-                color: white;
-                padding: 15px;
-                border-radius: 10px;
-                text-align: center;
-                z-index: 9999;
-                animation: fadeInOut 3s ease;
-            `;
-            
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        function closeEpisodeModal() {
-            document.getElementById('episodeModal').classList.add('hidden');
-        }
-
-        function setupEventListeners() {
-            // Aggiorna select stagioni
-            document.getElementById('seasonSelect').addEventListener('change', async function() {
-                if (currentMovieData && currentMovieData.type === 'tv') {
-                    await loadEpisodesForSeason(currentMovieData.id, parseInt(this.value));
-                }
-            });
-            
-            // Gestione tasti iOS
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') {
-                    if (!document.getElementById('episodeModal').classList.contains('hidden')) {
-                        closeEpisodeModal();
-                    } else if (!document.getElementById('playerScreen').classList.contains('hidden')) {
-                        closePlayer();
-                    }
-                }
-            });
-        }
-
-        // PULL TO REFRESH
-        let startY = 0;
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 1) {
-                startY = e.touches[0].clientY;
-            }
-        });
-
-        document.addEventListener('touchend', (e) => {
-            if (e.changedTouches.length === 1) {
-                const endY = e.changedTouches[0].clientY;
-                const diff = startY - endY;
-                
-                if (diff > 100 && window.scrollY === 0) {
-                    // Pull to refresh
-                    location.reload();
-                }
-            }
-        });
-
-        // OFFLINE DETECTION
-        window.addEventListener('online', () => {
-            showToast('Sei online');
-        });
-
-        window.addEventListener('offline', () => {
-            showError('Sei offline');
-        });
-    </script>
-</body>
+    <footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.9rem; border-top: 1px solid #333; margin-top: 3rem;">
+      <p>© 2025 Copyright AIMODS | Forked by VixSrc</p>
+    </footer>
+  </body>
 </html>

@@ -189,24 +189,27 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
   showLoading(true);
 
   try {
-    // Setup CORS hook
+    // Assicurati che l'hook XHR sia installato
     setupVideoJsXhrHook();
 
+    // Se c'è già un player, rimuovilo completamente
     if (player) {
       player.dispose();
       player = null;
     }
 
-    const streamData = await getDirectStream(id, isMovie, season, episode);
+    const streamData = await getDirectStream(
+      id,
+      isMovie,
+      season,
+      episode
+    );
 
     if (!streamData || !streamData.m3u8Url) {
       throw new Error("Impossibile ottenere l'URL dello stream");
     }
 
     const proxiedM3u8Url = applyCorsProxy(streamData.m3u8Url);
-
-    // DEBUG per iOS
-    console.log("📱 iOS Stream URL:", proxiedM3u8Url);
 
     // Assicurati che l'elemento video esista
     let videoElement = document.getElementById("player-video");
@@ -217,18 +220,13 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
       videoElement.className = "video-js vjs-theme-vixflix vjs-big-play-centered";
       videoElement.setAttribute("controls", "");
       videoElement.setAttribute("preload", "auto");
-      videoElement.setAttribute("playsinline", ""); // CRITICO per iOS
-      videoElement.setAttribute("webkit-playsinline", ""); // CRITICO per iOS
-      videoElement.setAttribute("x-webkit-airplay", "allow"); // Per AirPlay
+      videoElement.setAttribute("playsinline", "");
       videoElement.setAttribute("crossorigin", "anonymous");
       
       const loadingOverlay = document.getElementById("loading-overlay");
       videoContainer.insertBefore(videoElement, loadingOverlay);
     }
 
-    // **CONFIGURAZIONE SPECIALE PER iOS**
-    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    
     player = videojs("player-video", {
       controls: true,
       fluid: true,
@@ -236,20 +234,9 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
       playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
       html5: {
         vhs: {
-          overrideNative: !isIOS, // Importante: su iOS usa il player nativo
-          enableLowInitialPlaylist: true,
-          smoothQualityChange: true,
-          limitRenditionByPlayerDimensions: false,
-          useDevicePixelRatio: true
+          overrideNative: true,
+          bandwidth: 1000000,
         },
-        nativeAudioTracks: isIOS,
-        nativeVideoTracks: isIOS,
-        nativeTextTracks: isIOS
-      },
-      techOrder: isIOS ? ['html5'] : ['html5'], // Forza HTML5 su iOS
-      children: {
-        audioTrackButton: isIOS ? false : true,
-        textTrackDisplay: isIOS ? false : true
       },
       controlBar: {
         children: [
@@ -260,54 +247,27 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
           "durationDisplay",
           "progressControl",
           "remainingTimeDisplay",
-          !isIOS ? "playbackRateMenuButton" : null,
-          !isIOS ? "chaptersButton" : null,
-          !isIOS ? "descriptionsButton" : null,
-          !isIOS ? "subsCapsButton" : null,
-          !isIOS ? "audioTrackButton" : null,
-          !isIOS ? "qualitySelector" : null,
+          "playbackRateMenuButton",
+          "chaptersButton",
+          "descriptionsButton",
+          "subsCapsButton",
+          "audioTrackButton",
+          "qualitySelector",
           "fullscreenToggle",
-        ].filter(Boolean),
+        ],
       },
     });
 
-    // **PER iOS: Configurazione speciale dello stream**
-    if (isIOS) {
-      // iOS preferisce .m3u8 diretto senza proxy complessi
-      const directUrl = streamData.m3u8Url.replace(/^https:\/\/(corsproxy\.io|cors-anywhere\.com)\//, 'https://');
-      console.log("📱 iOS Direct URL:", directUrl);
-      
-      // Prova con URL diretto prima
-      try {
-        player.src({
-          src: directUrl,
-          type: "application/x-mpegURL",
-          withCredentials: false
-        });
-      } catch (e) {
-        console.log("⚠️ Fallback al proxy per iOS");
-        player.src({
-          src: proxiedM3u8Url,
-          type: "application/x-mpegURL",
-          withCredentials: false
-        });
-      }
-    } else {
-      player.src({
-        src: proxiedM3u8Url,
-        type: "application/x-mpegURL"
-      });
-    }
+    player.src({
+      src: proxiedM3u8Url,
+      type: "application/x-mpegURL",
+    });
+
+    player.hlsQualitySelector();
 
     player.ready(function () {
       setupKeyboardShortcuts();
       showLoading(false);
-      
-      // Setup per iOS
-      if (isIOS) {
-        setupIOSControls();
-        addiOSPlayButton(); // Pulsante play manuale per iOS
-      }
       
       trackVideoProgress(
         currentItem.id,
@@ -317,66 +277,18 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
         episode
       );
 
-      // Su iOS, non forzare autoplay
-      if (!isIOS) {
-        player.play().catch((e) => {
-          console.log("Auto-play prevented:", e);
-        });
-      }
+      player.play().catch((e) => {
+        // // console.log("Auto-play prevented:", e);
+      });
     });
 
-    // Gestione errori specifica iOS
     player.on("error", function () {
-      const error = player.error();
-      console.error("❌ Video.js Error:", error);
-      
-      if (error && error.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
-        showError("Formato non supportato su iOS. Prova con un'altra sorgente.");
-      } else {
-        showError("Errore durante il caricamento del video");
-      }
+      showError("Errore durante il caricamento del video");
     });
 
-    player.on("loadedmetadata", function () {
-      console.log("✅ Metadata loaded su iOS");
+    player.on("loadeddata", function () {
+      // // console.log("✅ Video data loaded");
     });
-
-  } catch (err) {
-    console.error("❌ Load video error:", err);
-    showError("Impossibile caricare il video. Riprova più tardi.");
-  }
-}
-
-// Aggiungi un pulsante play manuale per iOS
-function addiOSPlayButton() {
-  if (/iPhone|iPad|iPod/.test(navigator.userAgent) && player) {
-    const playButton = document.createElement('button');
-    playButton.innerHTML = '▶️ Play';
-    playButton.style.cssText = `
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(229, 9, 20, 0.9);
-      color: white;
-      border: none;
-      padding: 15px 30px;
-      border-radius: 50px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      z-index: 100;
-    `;
-    
-    playButton.onclick = () => {
-      player.play();
-      playButton.remove();
-    };
-    
-    const videoContainer = document.querySelector('.video-container');
-    videoContainer.appendChild(playButton);
-  }
-}
   } catch (err) {
     showError("Impossibile caricare il video. Riprova più tardi.");
   }
