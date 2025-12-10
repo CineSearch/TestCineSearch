@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
+
+    <title>CineSearch</title>
+
+    <link href="https://vjs.zencdn.net/8.16.1/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/8.16.1/video.min.js"></script>
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <header id="header">
+      <div class="logo">
+        <i class="fas fa-film"></i>
+        <span>CineSearch</span>
+      </div>
+      <div class="header-controls">
+        <div class="cors-selector">
+          <label class="cors-label" for="cors-select">🌐 CORS Proxy</label>
+          <select id="cors-select"></select>
+        </div>
+        <div class="search-container">
+          <input
+            type="text"
+            id="search"
+            placeholder="🔍 Cerca film, serie TV..."
+          />
+        </div>
+      </div>
+      <div class="preferiti-counter" onclick="showPreferiti()" style="cursor: pointer;">
+        <span class="fav-icon">⭐</span>
+        <span id="preferiti-count">0</span>
+      </div>
+    </header>
+
+    <main>
+      <div id="home">
+        <section class="hero">
+          <div class="hero-content">
+            <h1>Benvenuto su CineSearch</h1>
+            <p>La tua piattaforma per film e serie TV</p>
+            
+            <div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+              <button class="nav-btn" onclick="showAllMovies()">🎬 Tutti i Film</button>
+              <button class="nav-btn" onclick="showAllTV()">📺 Tutte le Serie TV</button>
+              <button class="nav-btn" onclick="showCategories()">🎭 Categorie</button>
+              <button class="nav-btn" onclick="showPreferiti()">⭐ Preferiti</button>
+            </div>
+          </div>
+        </section>
+        
+        <section id="preferiti" style="display: none;">
+          <h2>⭐ Preferiti</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="preferiti-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="preferiti-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="preferiti-carousel">▶</button>
+          </div>
+        </section>
+
+        <section id="continua-visione" style="display: none;">
+          <h2>▶️ Continua visione</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="continua-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="continua-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="continua-carousel">▶</button>
+          </div>
+        </section>
+        
+        <section id="trending">
+          <h2>🔥 Trending</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="trending-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="trending-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="trending-carousel">▶</button>
+          </div>
+        </section>
+
+        <section id="nowPlaying">
+          <h2>🎬 Ultimi Film</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="nowPlaying-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="nowPlaying-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="nowPlaying-carousel">▶</button>
+          </div>
+        </section>
+
+        <section id="popularMovies">
+          <h2>⭐ Film Popolari</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="popularMovies-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="popularMovies-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="popularMovies-carousel">▶</button>
+          </div>
+        </section>
+
+        <section id="onTheAir">
+          <h2>📺 Ultime Serie</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="onTheAir-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="onTheAir-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="onTheAir-carousel">▶</button>
+          </div>
+        </section>
+
+        <section id="popularTV">
+          <h2>🏆 Serie Popolari</h2>
+          <div class="carousel-wrapper">
+            <button class="arrow left" data-target="popularTV-carousel">◀</button>
+            <div class="carousel-container">
+              <div class="carousel" id="popularTV-carousel"></div>
+            </div>
+            <button class="arrow right" data-target="popularTV-carousel">▶</button>
+          </div>
+        </section>
+      </div>
+
+      <div id="results"></div>
+
+      <div id="player">
+        <div class="player-header">
+          <button class="back-btn" onclick="goBack()">← Torna indietro</button>
+        </div>
+
+        <div class="player-info" id="player-info">
+          <h1 id="player-title"></h1>
+          <div class="meta" id="player-meta"></div>
+          <div class="overview" id="player-overview"></div>
+        </div>
+
+        <div class="player-content">
+          <div class="video-container">
+            <div
+              id="episode-warning"
+              class="select-episode-warning"
+              style="display: none"
+            >
+              <div class="icon">📺</div>
+              <h3>Seleziona un episodio</h3>
+              <p>
+                Scegli una stagione e un episodio dalla lista a destra per
+                iniziare la riproduzione
+              </p>
+            </div>
+
+            <video
+              id="player-video"
+              class="video-js vjs-theme-vixflix vjs-big-play-centered"
+              controls
+              preload="auto"
+              playsinline
+              crossorigin="anonymous"
+            ></video>
+
+            <div
+              id="loading-overlay"
+              class="loading-overlay"
+              style="display: none"
+            >
+              <div class="loading"></div>
+              <div class="loading-text">Caricamento stream...</div>
+            </div>
+          </div>
+          <div
+            class="episode-selector"
+            id="episode-selector"
+            style="display: none"
+          >
+            <h3>Seleziona episodio</h3>
+            <div class="season-selector">
+              <label>Stagione:</label>
+              <select id="season-select"></select>
+            </div>
+            <div class="episodes-list" id="episodes-list"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- TUTTI I FILM -->
+      <section id="allMovies" style="display: none;">
+        <h2>🎬 Tutti i Film</h2>
+        <div class="carousel-wrapper">
+          <button class="arrow left" data-target="allMovies-carousel">◀</button>
+          <div class="carousel-container">
+            <div class="carousel" id="allMovies-carousel"></div>
+          </div>
+          <button class="arrow right" data-target="allMovies-carousel">▶</button>
+        </div>
+        <div class="load-more-container">
+          <button id="loadMoreMovies" class="load-more-btn" onclick="loadMoreMovies()">Carica più film</button>
+        </div>
+      </section>
+      
+      <!-- TUTTE LE SERIE TV -->
+      <section id="allTV" style="display: none;">
+        <h2>📺 Tutte le Serie TV</h2>
+        <div class="carousel-wrapper">
+          <button class="arrow left" data-target="allTV-carousel">◀</button>
+          <div class="carousel-container">
+            <div class="carousel" id="allTV-carousel"></div>
+          </div>
+          <button class="arrow right" data-target="allTV-carousel">▶</button>
+        </div>
+        <div class="load-more-container">
+          <button id="loadMoreTV" class="load-more-btn" onclick="loadMoreTV()">Carica più serie</button>
+        </div>
+      </section>
+      
+      <!-- CATEGORIE -->
+      <section id="categories" style="display: none;">
+        <div class="categories-grid" id="categories-grid"></div>
+      </section>
+      
+      <!-- SEZIONE PREFERITI -->
+      <section id="preferiti-section" style="display: none;">
+        <h2>⭐ I tuoi Preferiti</h2>
+        <div class="carousel-wrapper">
+          <button class="arrow left" onclick="scrollCarouselPreferiti(-1)">◀</button>
+          <div class="carousel-container">
+            <div class="carousel" id="preferiti-section-carousel"></div>
+          </div>
+          <button class="arrow right" onclick="scrollCarouselPreferiti(1)">▶</button>
+        </div>
+        <div class="preferiti-message" id="preferiti-message" style="text-align: center; padding: 2rem; color: #888;">
+          Aggiungi contenuti ai preferiti per vederli qui
+        </div>
+      </section>
+    </main>
+
+    <!-- Includi tutti i file JavaScript in ORDINE CORRETTO -->
+    <script src="script.js"></script>          <!-- Primo: dichiara le variabili globali -->
+    <script src="api.js"></script>             <!-- Funzioni API -->
+    <script src="cors.js"></script>            <!-- Gestione CORS -->
+    <script src="preferiti.js"></script>       <!-- Gestione preferiti -->
+    <script src="continua-visione.js"></script> <!-- Continua visione -->
+    <script src="card.js"></script>            <!-- Creazione card -->
+    <script src="categorie.js"></script>       <!-- Categorie -->
+    <script src="film-serie.js"></script>      <!-- Film e serie -->
+    <script src="ricerca.js"></script>         <!-- Ricerca -->
+    <!-- Aggiungi dopo gli altri script -->
+<script src="device-compatibility.js"></script>
+    <script src="player.js"></script>          <!-- Player (ultimo, usa le funzioni sopra) -->
+
+    <footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.9rem; border-top: 1px solid #333; margin-top: 3rem;">
+      <p>© 2025 Copyright AIMODS | Forked by VixSrc</p>
+    </footer>
+  </body>
+</html>
