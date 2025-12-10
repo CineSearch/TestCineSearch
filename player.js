@@ -228,35 +228,41 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
     }
 
     player = videojs("player-video", {
-      controls: true,
-      fluid: true,
-      aspectRatio: "16:9",
-      playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
-      html5: {
-        vhs: {
-          overrideNative: true,
-          bandwidth: 1000000,
-        },
-      },
-      controlBar: {
-        children: [
-          "playToggle",
-          "volumePanel",
-          "currentTimeDisplay",
-          "timeDivider",
-          "durationDisplay",
-          "progressControl",
-          "remainingTimeDisplay",
-          "playbackRateMenuButton",
-          "chaptersButton",
-          "descriptionsButton",
-          "subsCapsButton",
-          "audioTrackButton",
-          "qualitySelector",
-          "fullscreenToggle",
-        ],
-      },
-    });
+  controls: true,
+  fluid: true,
+  aspectRatio: "16:9",
+  playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
+  html5: {
+    vhs: {
+      overrideNative: true,
+      useDevicePixelRatio: true,  // Aggiungi questa linea
+      smoothQualityChange: true,
+      enableLowInitialPlaylist: true,
+      useBandwidthFromLocalStorage: true
+    },
+    nativeAudioTracks: false,
+    nativeVideoTracks: false,
+    nativeTextTracks: false
+  },
+  controlBar: {
+    children: [
+      "playToggle",
+      "volumePanel",
+      "currentTimeDisplay",
+      "timeDivider",
+      "durationDisplay",
+      "progressControl",
+      "remainingTimeDisplay",
+      "playbackRateMenuButton",
+      "chaptersButton",
+      "descriptionsButton",
+      "subsCapsButton",
+      "audioTrackButton",
+      "qualitySelector",
+      "fullscreenToggle",
+    ],
+  },
+});
 
     player.src({
       src: proxiedM3u8Url,
@@ -265,30 +271,56 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
 
     player.hlsQualitySelector();
 
-    player.ready(function () {
-      setupKeyboardShortcuts();
-      showLoading(false);
-      
-      trackVideoProgress(
-        currentItem.id,
-        currentItem.media_type || (currentItem.title ? "movie" : "tv"),
-        player.el().querySelector("video"),
-        season,
-        episode
-      );
+   player.ready(function () {
+  setupKeyboardShortcuts();
+  showLoading(false);
+  
+  trackVideoProgress(
+    currentItem.id,
+    currentItem.media_type || (currentItem.title ? "movie" : "tv"),
+    player.el().querySelector("video"),
+    season,
+    episode
+  );
 
-      player.play().catch((e) => {
-        // // console.log("Auto-play prevented:", e);
-      });
+  // Per iOS, non tentare autoplay immediatamente
+  if (!/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    player.play().catch((e) => {
+      // console.log("Auto-play prevented:", e);
     });
+  }
+});
 
-    player.on("error", function () {
-      showError("Errore durante il caricamento del video");
-    });
-
-    player.on("loadeddata", function () {
-      // // console.log("✅ Video data loaded");
-    });
+// Aggiungi un pulsante play manuale per iOS
+function addiOSPlayButton() {
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent) && player) {
+    const playButton = document.createElement('button');
+    playButton.innerHTML = '▶️ Play';
+    playButton.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(229, 9, 20, 0.9);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      z-index: 100;
+    `;
+    
+    playButton.onclick = () => {
+      player.play();
+      playButton.remove();
+    };
+    
+    const videoContainer = document.querySelector('.video-container');
+    videoContainer.appendChild(playButton);
+  }
+}
   } catch (err) {
     showError("Impossibile caricare il video. Riprova più tardi.");
   }
