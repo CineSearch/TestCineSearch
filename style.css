@@ -176,16 +176,17 @@ section h2::before {
 }
 
 .carousel-container {
-  width: 80% !important;
+  width: 80% !important; /* Forza il container ad essere più stretto */
   max-width: 80% !important;
   margin: 0 auto !important;
   overflow: hidden !important;
   position: relative !important;
 }
 
+/* Carosello stesso - DEVE essere più largo del container */
 .carousel {
   display: flex !important;
-  width: max-content !important;
+  width: max-content !important; /* IMPORTANTE: lascia che si espanda */
   min-width: max-content !important;
   gap: 20px !important;
   padding: 10px 0 !important;
@@ -253,7 +254,7 @@ section h2::before {
 }
 
 .card {
-  width: 100%;
+    width: 100%;
   min-width: auto;
   margin-bottom: 10px;
   min-width: 200px;
@@ -438,129 +439,110 @@ section h2::before {
   color: rgba(255, 255, 255, 0.7);
 }
 
-/* ========== STILI HLS.JS / VIDEO NATIVO ========== */
-.hls-player {
+.video-js {
   width: 100%;
   height: auto;
   aspect-ratio: 16/9;
-  background: #000;
-  border-radius: 12px;
-  display: block;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Controlli player nativo */
-.hls-player::-webkit-media-controls {
-  display: flex !important;
-  opacity: 1 !important;
+.vjs-theme-vixflix {
+  --vjs-theme-vixflix--primary: #2a09e5;
+  --vjs-theme-vixflix--secondary: #0715b2;
 }
 
-.hls-player::-webkit-media-controls-panel {
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent) !important;
-  backdrop-filter: blur(10px) !important;
-  padding: 0 1em !important;
+.video-js .vjs-big-play-button {
+  background-color: rgba(9, 35, 229, 0.9);
+  border: 3px solid #fff;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  line-height: 74px;
+  font-size: 3em;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
 }
 
-.hls-player::-webkit-media-controls-play-button {
-  color: #2a09e5 !important;
+.video-js .vjs-big-play-button:hover {
+  background-color: #2a09e5;
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 0 30px rgba(9, 35, 229, 0.9);
 }
 
-.hls-player::-webkit-media-controls-current-time-display,
-.hls-player::-webkit-media-controls-time-remaining-display {
-  color: white !important;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif !important;
+.video-js .vjs-control-bar {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  backdrop-filter: blur(10px);
+  height: 4em;
+  padding: 0 1em;
 }
 
-.hls-player::-webkit-media-controls-volume-slider {
-  color: #2a09e5 !important;
+.video-js .vjs-progress-control .vjs-progress-holder {
+  height: 0.5em;
+  margin: 0;
 }
 
-.hls-player::-webkit-media-controls-mute-button {
-  color: #2a09e5 !important;
+.video-js .vjs-play-progress {
+  background-color: #2a09e5;
 }
 
-.hls-player::-webkit-media-controls-fullscreen-button {
-  display: block !important;
-  color: #2a09e5 !important;
+.video-js .vjs-play-progress:before {
+  color: #2a09e5;
+  font-size: 1.2em;
+  top: -0.4em;
 }
 
-/* Pulsante play grande per HLS */
-.hls-player::--webkit-media-controls-start-playback-button {
-  display: block !important;
-  background-color: rgba(42, 9, 229, 0.9) !important;
-  border: 3px solid #fff !important;
-  border-radius: 50% !important;
-  width: 80px !important;
-  height: 80px !important;
-  transition: all 0.3s ease !important;
+.video-js .vjs-load-progress {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-.hls-player::--webkit-media-controls-start-playback-button:hover {
-  background-color: #2a09e5 !important;
-  transform: scale(1.1) !important;
-  box-shadow: 0 0 30px rgba(9, 35, 229, 0.9) !important;
+.video-js .vjs-slider {
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Video fullscreen */
-.hls-player:fullscreen {
-  width: 100vw !important;
-  height: 100vh !important;
-  border-radius: 0 !important;
-  background: #000 !important;
+.video-js .vjs-volume-level {
+  background-color: #2a09e5;
 }
 
-/* Stili per hls.js quality selector (se lo implementi) */
-.hls-quality-selector {
-  position: absolute;
-  bottom: 60px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.9);
+.video-js:hover .vjs-control-bar {
+  opacity: 1;
+}
+
+.video-js .vjs-button > .vjs-icon-placeholder:before {
+  line-height: 2.2;
+}
+
+.video-js .vjs-menu-button .vjs-menu .vjs-menu-content {
+  background-color: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 8px;
-  padding: 10px;
-  z-index: 50;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
-.hls-quality-option {
-  padding: 8px 12px;
-  color: white;
-  cursor: pointer;
-  transition: background 0.3s ease;
-  border-radius: 4px;
+.video-js .vjs-menu li.vjs-menu-item {
+  padding: 0.8em 1em;
+  font-size: 1em;
+  transition: all 0.2s ease;
 }
 
-.hls-quality-option:hover {
-  background: rgba(42, 9, 229, 0.3);
+.video-js .vjs-menu li.vjs-menu-item:hover,
+.video-js .vjs-menu li.vjs-menu-item:focus {
+  background-color: rgba(229, 9, 20, 0.3);
 }
 
-.hls-quality-option.selected {
-  background: rgba(42, 9, 229, 0.5);
+.video-js .vjs-menu li.vjs-selected,
+.video-js .vjs-menu li.vjs-selected:hover,
+.video-js .vjs-menu li.vjs-selected:focus {
+  background-color: rgba(229, 9, 20, 0.5);
   color: #fff;
 }
 
-/* Rimuovi stili video.js */
-.video-js, .vjs-theme-vixflix {
-  display: none !important;
+.vjs-quality-selector .vjs-menu-button {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-weight: 600;
 }
-
-/* Stili specifici per iOS */
-.ios-native-player {
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-appearance: none !important;
-}
-
-.ios-native-player::-webkit-media-controls {
-  opacity: 1 !important;
-}
-
-.ios-native-player::-webkit-media-controls-enclosure {
-  background: linear-gradient(transparent, rgba(0,0,0,0.7)) !important;
-}
-
-/* ========== FINE STILI PLAYER ========== */
 
 .episode-selector {
   background: rgba(255, 255, 255, 0.1);
@@ -790,7 +772,7 @@ section h2::before {
   align-items: center !important;
   justify-content: center !important;
   position: relative !important;
-  padding: 0 60px !important;
+  padding: 0 60px !important; /* Spazio per le frecce */
 }
 .carousel-container {
   overflow-x: auto;
@@ -957,11 +939,6 @@ section h2::before {
   .vix-container {
     gap: 20px;
   }
-  
-  /* HLS Player su Smart TV */
-  .hls-player {
-    max-height: 80vh;
-  }
 }
 
 /* Smart TV layout senza zoom eccessivo */
@@ -1017,11 +994,22 @@ section h2::before {
     font-size: 1rem;
     padding: 8px 14px;
   }
+
+  .video-js .vjs-big-play-button {
+    width: 80px;
+    height: 80px;
+    font-size: 2.5em;
+  }
+
+  .video-js .vjs-control-bar {
+    height: 4em;
+    font-size: 1.1rem;
+  }
 }
 
 .card {
-  flex: 0 0 auto !important;
-  width: 220px !important;
+  flex: 0 0 auto !important; /* Non si ridimensiona */
+  width: 220px !important; /* Larghezza fissa aumentata */
   min-width: 220px !important;
   max-width: 220px !important;
 }
@@ -1282,7 +1270,6 @@ section h2::before {
     font-size: 1.3rem;
   }
 }
-
 /* Stili per la sezione preferiti */
 .preferiti-remove:hover {
   background: #b20710 !important;
@@ -1336,7 +1323,6 @@ section h2::before {
 .card.in-preferiti .fav-btn:hover {
   background: #b20710;
 }
-
 .preferiti-counter {
   background: rgba(255, 204, 0, 0.2);
   border: 2px solid rgba(255, 204, 0, 0.5);
@@ -1362,7 +1348,6 @@ section h2::before {
 #preferiti-count {
   font-size: 1rem;
 }
-
 /* Aggiungi questi stili per i filtri anno */
 .year-filter {
   background: rgba(255, 255, 255, 0.05);
@@ -1443,7 +1428,6 @@ footer {
     margin-bottom: 10px;
   }
 }
-
 #allMovies .year-filter,
 #allTV .year-filter {
   background: rgba(255, 255, 255, 0.05);
@@ -1502,7 +1486,6 @@ footer {
 #allTV .year-filter button:last-of-type:hover {
   background: #555;
 }
-
 .availability-check {
   display: flex;
   align-items: center;
@@ -1548,7 +1531,6 @@ footer {
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
-
 .vertical-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1628,77 +1610,64 @@ footer {
   display: block;
 }
 
-/* Pulsante play personalizzato per hls.js */
-.custom-play-button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(42, 9, 229, 0.9);
-  border: 3px solid #fff;
-  border-radius: 50%;
-  width: 80px;
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 20;
-  transition: all 0.3s ease;
+/* Stili per video nativo iOS */
+video:not(.video-js) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }
 
-.custom-play-button:hover {
-  background: #2a09e5;
-  transform: translate(-50%, -50%) scale(1.1);
-  box-shadow: 0 0 30px rgba(9, 35, 229, 0.9);
+/* iOS fullscreen fix */
+video:not(.video-js):fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
 }
 
-.custom-play-button::before {
-  content: "▶";
+/* Controlli nativi iOS */
+video:not(.video-js)::-webkit-media-controls-panel {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+}
+
+video:not(.video-js)::-webkit-media-controls-play-button {
+  color: #2a09e5;
+}
+
+video:not(.video-js)::-webkit-media-controls-current-time-display,
+video:not(.video-js)::-webkit-media-controls-time-remaining-display {
   color: white;
-  font-size: 2rem;
-  margin-left: 5px;
+}
+/* iOS video player styles */
+video:not(.video-js) {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16/9 !important;
+  background: #000 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+  -webkit-appearance: none !important;
 }
 
-/* Keyboard shortcuts feedback */
-.keyboard-feedback {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: #e50914;
-  padding: 20px 40px;
-  border-radius: 10px;
-  font-size: 2rem;
-  font-weight: bold;
-  z-index: 100;
-  pointer-events: none;
-  animation: feedbackFade 0.8s ease;
+/* iOS fullscreen */
+video:not(.video-js)::-webkit-media-controls-fullscreen-button {
+  display: block !important;
 }
 
-@keyframes feedbackFade {
-  0% { opacity: 1; }
-  70% { opacity: 1; }
-  100% { opacity: 0; }
+/* iOS controls */
+video:not(.video-js)::-webkit-media-controls-panel {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent) !important;
+  backdrop-filter: blur(10px) !important;
 }
 
-#volume-feedback {
-  position: absolute;
-  top: 50%;
-  right: 40px;
-  transform: translateY(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  padding: 15px 25px;
-  border-radius: 8px;
-  font-size: 1.5rem;
-  font-weight: bold;
-  z-index: 100;
-  pointer-events: none;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+/* Hide Video.js controls on iOS */
+.video-js:not(.vjs-has-started) {
+  display: none !important;
+}
+
+/* Mostra sempre il video element su iOS */
+#player-video:not(.video-js) {
+  display: block !important;
 }
