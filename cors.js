@@ -1,10 +1,15 @@
 // Gestione CORS e Video.js hooks
 const xhrRequestHook = (options) => {
   const originalUri = options.uri;
+  
+  // Su iOS, non usare proxy per gli stream video
+  if (shouldUseNativePlayer() && originalUri.includes('.m3u8')) {
+    return options;
+  }
+  
   options.uri = applyCorsProxy(originalUri);
   return options;
 };
-
 function setupVideoJsXhrHook() {
   if (typeof videojs === "undefined" || !videojs.Vhs) {
     return;
