@@ -99,8 +99,6 @@ async function openPlayerIOS(item) {
   }
 }
 
-
-
 // ========================================================
 //  CARICAMENTO VIDEO iOS – VERSIONE FINALE
 // ========================================================
@@ -148,8 +146,6 @@ async function loadVideoIOS(isMovie, id, season = null, episode = null) {
   }
 }
 
-
-
 // ========================================================
 //  getDirectStreamIOS – VERSIONE *INFALLIBILE*
 // ========================================================
@@ -176,8 +172,6 @@ async function getDirectStreamIOS(tmdbId, isMovie, season = null, episode = null
 
   throw new Error("Nessun HLS rilevato");
 }
-
-
 
 // ========================================================
 //  Parser HLS – VERSIONE DEFINITIVA
@@ -218,8 +212,6 @@ function extractIOSHLS(html) {
   return best;
 }
 
-
-
 // ========================================================
 //  Ottimizzazione URL iOS – versione finale
 // ========================================================
@@ -239,8 +231,6 @@ function optimizeIOSURL(url) {
 
   return u;
 }
-
-
 
 // ========================================================
 //  EVENTI VIDEO iOS – STABILI
@@ -268,8 +258,6 @@ function setupIOSVideoEvents(video) {
   };
 }
 
-
-
 // ========================================================
 //  CONFIGURAZIONE
 // ========================================================
@@ -285,6 +273,27 @@ function configureVideoForIOS(v) {
 
   v.style.webkitTransform = "translateZ(0)";
   v.style.transform = "translateZ(0)";
+}
+
+async function testIOSDirect(url) {
+  const video = document.getElementById("player-video");
+  video.pause();
+  video.removeAttribute("src");
+  video.innerHTML = "";
+  video.load();
+
+  video.src = url;
+  video.load();
+
+  video.onerror = () => {
+    console.error("❌ ERRORE iOS:", video.error);
+    alert("iOS LOAD FAILED: " + JSON.stringify(video.error));
+  };
+
+  video.onloadedmetadata = () => {
+    console.log("✅ METADATA CARICATI");
+    video.play();
+  };
 }
 
 // ==================== DESKTOP/ANDROID PLAYER (Video.js) ====================
