@@ -43,7 +43,7 @@ async function openPlayer(item) {
       aspect-ratio: 16/9;
       background: #000;
       border-radius: 12px;
-    `
+    `;
   }  else {
     // Per altri browser - Video.js
     newVideo.className = "video-js vjs-theme-vixflix vjs-big-play-centered";
