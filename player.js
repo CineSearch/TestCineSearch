@@ -32,7 +32,7 @@ async function openPlayer(item) {
   // Imposta attributi in base al dispositivo
   if (shouldUseNativePlayer()) {
     // Per iOS/Safari - player nativo
-    newVideo.className = "video-js";
+    newVideo.className = "video-js vjs-theme-vixflix vjs-big-play-centered";
     newVideo.setAttribute("controls", "");
     newVideo.setAttribute("preload", "auto");
     newVideo.setAttribute("playsinline", "");
