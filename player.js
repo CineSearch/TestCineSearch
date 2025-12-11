@@ -32,6 +32,7 @@ async function openPlayer(item) {
   // Imposta attributi in base al dispositivo
   if (shouldUseNativePlayer()) {
     // Per iOS/Safari - player nativo
+    newVideo.className = "video-js";
     newVideo.setAttribute("controls", "");
     newVideo.setAttribute("preload", "auto");
     newVideo.setAttribute("playsinline", "");
@@ -42,8 +43,8 @@ async function openPlayer(item) {
       aspect-ratio: 16/9;
       background: #000;
       border-radius: 12px;
-    `;
-  } else {
+    `
+  }  else {
     // Per altri browser - Video.js
     newVideo.className = "video-js vjs-theme-vixflix vjs-big-play-centered";
     newVideo.setAttribute("controls", "");
