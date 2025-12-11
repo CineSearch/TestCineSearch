@@ -5,554 +5,174 @@ let currentSeasons = [];
 let iosVideoElement = null; // Solo per iOS
 
 // Rilevamento dispositivo CORRETTO
+// ==================== RILEVAMENTO iOS ====================
 function isIOSDevice() {
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   return /iPad|iPhone|iPod/.test(ua);
 }
 
-function isSafariBrowser() {
-  const ua = navigator.userAgent || navigator.vendor || window.opera;
-  return /Safari/.test(ua) && !/Chrome|Chromium|Edg|Firefox/.test(ua);
-}
+// ==================== PLAYER iOS (SOLO HLS.js) ====================
+async function openPlayerIOS(item) {
+  if (!isIOSDevice()) {
+    console.error("openPlayerIOS chiamato su device non iOS.");
+    return;
+  }
 
-function shouldUseNativeHLS() {
-  // Safari su iOS o macOS supporta HLS nativamente
-  return isIOSDevice() || isSafariBrowser();
-}
-
-function shouldUseHlsJs() {
-  // Usa hls.js per tutti i browser tranne Safari
-  return !shouldUseNativeHLS();
-}
-
-async function openPlayer(item) {
-  currentItem = item;
-
+  document.getElementById("player").style.display = "block";
   document.getElementById("home").style.display = "none";
   document.getElementById("results").style.display = "none";
-  document.getElementById("player").style.display = "block";
 
-  // Pulisci player precedente
-  cleanupPlayer();
-
-  // Imposta titolo e info
   const title = item.title || item.name;
   document.getElementById("player-title").textContent = title;
   document.getElementById("player-overview").textContent = item.overview || "...";
 
-  const mediaType = item.media_type || (item.title ? "movie" : "tv");
+  const isMovie = item.media_type === "movie" || item.title;
 
-  if (mediaType === "tv") {
-    document.getElementById("episode-warning").style.display = "flex";
-    await loadTVSeasons(item.id);
+  if (isMovie) {
+    await loadVideoIOS(true, item.id);
   } else {
-    document.getElementById("episode-warning").style.display = "none";
-    document.getElementById("episode-selector").style.display = "none";
-    await loadVideo(true, item.id);
+    await loadTVSeasonsIOS(item.id);
   }
 
   window.scrollTo(0, 0);
 }
 
-// ==================== PLAYER HLS.JS / NATIVE HLS ====================
-async function loadVideo(isMovie, id, season = null, episode = null) {
-  console.log("🎬 Caricamento video con HLS");
-  showLoading(true, "Ricerca stream...");
+// ==================== CREAZIONE VIDEO iOS (semplice e ottimizzato) ====================
+function createIOSVideoElement() {
+  const old = document.getElementById("player-video");
+  if (old) old.remove();
+
+  const container = document.querySelector(".video-container");
+
+  const video = document.createElement("video");
+  video.id = "player-video";
+
+  // Attributi necessari per iOS
+  video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
+  video.setAttribute("preload", "auto");
+  video.setAttribute("controls", "");
+  video.setAttribute("crossorigin", "anonymous");
+
+  // Stile consigliato per iOS
+  video.style.width = "100%";
+  video.style.height = "auto";
+  video.style.maxHeight = "70vh";
+  video.style.background = "#000";
+  video.style.borderRadius = "12px";
+  video.style.display = "block";
+  video.style.transform = "translateZ(0)";
+
+  container.prepend(video);
+  return video;
+}
+
+// ==================== CARICAMENTO VIDEO (HLS.js) ====================
+async function loadVideoIOS(isMovie, id, season = null, episode = null) {
+  showLoading(true, "Caricamento stream per iOS...");
 
   try {
-    // Ottieni stream
     const streamData = await getDirectStream(id, isMovie, season, episode);
-    
-    if (!streamData || !streamData.m3u8Url) {
-      throw new Error("Nessun stream disponibile");
-    }
-    
-    let m3u8Url = streamData.m3u8Url;
-    
-    // Ottimizza URL in base al dispositivo
-    m3u8Url = await optimizeStreamUrl(m3u8Url);
-    
-    console.log("🔗 URL HLS:", m3u8Url.substring(0, 100) + "...");
-    
-    // Pulisci player precedente
-    cleanupPlayer();
-    
-    // Ottieni elemento video
-    let videoElement = document.getElementById("player-video");
-    if (!videoElement) {
-      videoElement = createVideoElement();
-    }
-    
-    // Configura player in base al browser
-    if (shouldUseNativeHLS()) {
-      await setupNativeHLS(videoElement, m3u8Url);
-    } else {
-      await setupHlsJs(videoElement, m3u8Url);
-    }
-    
-    // Tracciamento progresso
-    trackVideoProgress(id, isMovie ? "movie" : "tv", videoElement, season, episode);
-    
-  } catch (error) {
-    console.error("❌ Errore caricamento video:", error);
-    showError("Errore caricamento video", error.message);
-    showLoading(false);
-  }
-}
+    if (!streamData || !streamData.m3u8Url) throw new Error("Stream non trovato.");
 
-// Ottimizza URL stream in base al dispositivo
-async function optimizeStreamUrl(url) {
-  console.log("⚙️ Ottimizzazione URL per dispositivo");
-  
-  let optimizedUrl = url;
-  
-  // Per iOS/Safari: ottimizza per HLS nativo
-  if (shouldUseNativeHLS()) {
-    // 1. Forza HTTPS
-    if (optimizedUrl.startsWith('http://')) {
-      optimizedUrl = optimizedUrl.replace('http://', 'https://');
-      console.log("🔒 Forzato HTTPS per iOS");
-    }
-    
-    // 2. Rimuovi parametri problematici per iOS
-    const problematicParams = [
-      'h265', 'hevc', 'vp9', 'av1', // Codec non supportati
-      'dolby', 'atmos', 'hdr' // Formati avanzati
-    ];
-    
-    problematicParams.forEach(param => {
-      if (optimizedUrl.includes(param)) {
-        optimizedUrl = optimizedUrl.replace(new RegExp(`[?&]${param}=[^&]*`, 'gi'), '');
-        console.log(`🗑️ Rimosso parametro ${param} per iOS`);
-      }
-    });
-    
-    // 3. Aggiungi parametri per iOS se non presenti
-    if (!optimizedUrl.includes('avc=1')) {
-      optimizedUrl += (optimizedUrl.includes('?') ? '&' : '?') + 'avc=1';
-    }
-  }
-  
-  // Per hls.js: ottimizza per prestazioni
-  if (shouldUseHlsJs()) {
-    // Aggiungi parametri per migliori prestazioni hls.js
-    if (!optimizedUrl.includes('hls.js=1')) {
-      optimizedUrl += (optimizedUrl.includes('?') ? '&' : '?') + 'hls.js=1&lowLatency=1';
-    }
-  }
-  
-  console.log("✅ URL ottimizzato:", optimizedUrl.substring(0, 120));
-  return optimizedUrl;
-}
+    const m3u8 = streamData.m3u8Url;
 
-// Crea elemento video
-function createVideoElement() {
-  // Pulisci video esistente
-  const oldVideo = document.getElementById("player-video");
-  if (oldVideo) oldVideo.remove();
-  
-  // Crea nuovo elemento video
-  const videoContainer = document.querySelector(".video-container");
-  const videoElement = document.createElement("video");
-  videoElement.id = "player-video";
-  videoElement.className = "hls-player";
-  videoElement.controls = true;
-  videoElement.preload = "auto";
-  videoElement.playsInline = true;
-  videoElement.crossOrigin = "anonymous";
-  
-  // Attributi specifici per iOS
-  if (shouldUseNativeHLS()) {
-    videoElement.setAttribute("webkit-playsinline", "");
-    videoElement.setAttribute("x-webkit-airplay", "allow");
-  }
-  
-  // Stili
-  videoElement.style.cssText = `
-    width: 100%;
-    height: auto;
-    max-height: 70vh;
-    background: #000;
-    border-radius: 12px;
-    display: block;
-  `;
-  
-  // Performance per iOS
-  if (shouldUseNativeHLS()) {
-    videoElement.style.webkitTransform = "translateZ(0)";
-    videoElement.style.transform = "translateZ(0)";
-  }
-  
-  // Aggiungi al DOM
-  const loadingOverlay = document.getElementById("loading-overlay");
-  videoContainer.insertBefore(videoElement, loadingOverlay);
-  
-  return videoElement;
-}
+    const videoElement = createIOSVideoElement();
 
-// Configura HLS nativo (Safari/iOS)
-async function setupNativeHLS(videoElement, m3u8Url) {
-  console.log("🍎 Configurazione HLS nativo");
-  
-  try {
-    // Configura sorgente
-    videoElement.src = m3u8Url;
-    
-    // Aggiungi elemento source
-    const sourceElement = document.createElement('source');
-    sourceElement.src = m3u8Url;
-    sourceElement.type = 'application/vnd.apple.mpegurl';
-    videoElement.appendChild(sourceElement);
-    
-    // Event listener
-    setupVideoEvents(videoElement, true); // true = iOS mode
-    
-    // Carica video
-    videoElement.load();
-    
-    // Timeout per errori di caricamento
-    setTimeout(() => {
-      if (videoElement.readyState < 1) {
-        console.warn("⚠️ Video non si carica, provo fallback...");
-        tryStreamFallback(videoElement, m3u8Url, true);
-      }
-    }, 5000);
-    
-  } catch (error) {
-    console.error("❌ Errore HLS nativo:", error);
-    throw error;
-  }
-}
-
-// Configura hls.js (Chrome, Firefox, Edge, etc.)
-async function setupHlsJs(videoElement, m3u8Url) {
-  console.log("🔧 Configurazione hls.js");
-  
-  if (!Hls.isSupported()) {
-    console.warn("⚠️ hls.js non supportato, provo HLS nativo");
-    videoElement.src = m3u8Url;
-    videoElement.load();
-    setupVideoEvents(videoElement, false);
-    return;
-  }
-  
-  try {
-    // Crea nuova istanza hls.js
-    hlsInstance = new Hls({
-      enableWorker: true,
-      lowLatencyMode: true,
-      backBufferLength: 90,
-      maxBufferLength: 30,
-      maxMaxBufferLength: 60,
-      maxBufferSize: 60 * 1000 * 1000,
-      maxBufferHole: 0.5,
-      maxFragLookUpTolerance: 0.2,
-      liveSyncDurationCount: 3,
-      liveMaxLatencyDurationCount: 10,
-      enableSoftwareAES: true,
-      manifestLoadingTimeOut: 10000,
-      manifestLoadingMaxRetry: 3,
-      manifestLoadingRetryDelay: 500,
-      levelLoadingTimeOut: 10000,
-      levelLoadingMaxRetry: 3,
-      levelLoadingRetryDelay: 500,
-      fragLoadingTimeOut: 20000,
-      fragLoadingMaxRetry: 6,
-      fragLoadingRetryDelay: 500,
-      startFragPrefetch: true,
-      fpsDroppedMonitoringThreshold: 0.2,
-      fpsDroppedMonitoringPeriod: 5000,
-      capLevelToPlayerSize: true,
-      abrEwmaDefaultEstimate: 500000,
-      abrEwmaFastLive: 3,
-      abrEwmaSlowLive: 9,
-      abrEwmaFastVoD: 3,
-      abrEwmaSlowVoD: 9,
-      abrEwmaDefaultEstimateMax: 500000,
-      abrBandWidthFactor: 0.95,
-      abrBandWidthUpFactor: 0.7,
-      minAutoBitrate: 0
-    });
-    
-    // Carica sorgente
-    hlsInstance.loadSource(m3u8Url);
-    hlsInstance.attachMedia(videoElement);
-    
-    // Event listener hls.js
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
-      console.log("✅ Manifest HLS parsato");
-      showLoading(false);
-      
-      // Tenta autoplay
-      videoElement.play().catch(e => {
-        console.log("⏸️ Autoplay non permesso, tocca per avviare");
+    // ---- ⚡ HLS.js SEMPRE USATO SU iOS ----
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 120,
+        liveDurationInfinity: true,
       });
-    });
-    
-    hlsInstance.on(Hls.Events.ERROR, function(event, data) {
-      console.error("❌ Errore HLS:", data);
-      
-      if (data.fatal) {
-        switch(data.type) {
-          case Hls.ErrorTypes.NETWORK_ERROR:
-            console.log("🔄 Errore rete, riprovo...");
-            hlsInstance.startLoad();
-            break;
-          case Hls.ErrorTypes.MEDIA_ERROR:
-            console.log("🔄 Errore media, riprovo...");
-            hlsInstance.recoverMediaError();
-            break;
-          default:
-            console.error("❌ Errore fatale, ricarico video...");
-            hlsInstance.destroy();
-            tryStreamFallback(videoElement, m3u8Url, false);
-            break;
-        }
-      }
-    });
-    
-    // Gestione qualità (opzionale)
-    hlsInstance.on(Hls.Events.LEVEL_LOADED, function(event, data) {
-      console.log("📊 Livello qualità caricato:", data);
-      // Puoi implementare un selettore qualità qui
-      showAvailableQualities(hlsInstance.levels);
-    });
-    
-    // Event listener video standard
-    setupVideoEvents(videoElement, false);
-    
-  } catch (error) {
-    console.error("❌ Errore hls.js:", error);
-    hlsInstance = null;
-    throw error;
-  }
-}
 
-// Mostra qualità disponibili (opzionale)
-function showAvailableQualities(levels) {
-  if (!levels || levels.length < 2) return;
-  
-  // Puoi creare un selettore qualità qui
-  console.log("📶 Qualità disponibili:", levels.map(l => `${l.height}p`));
-}
+      hls.loadSource(m3u8);
+      hls.attachMedia(videoElement);
 
-// Configura event listener video
-function setupVideoEvents(videoElement, isIOS = false) {
-  let hasStarted = false;
-  
-  videoElement.onloadedmetadata = () => {
-    console.log("✅ Video pronto");
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        showLoading(false);
+        videoElement.play().catch(() => {});
+      });
+
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error("❌ HLS.js Error:", data);
+      });
+
+    } else if (videoElement.canPlayType("application/vnd.apple.mpegurl")) {
+      // fallback nativo (solo se Hls.isSupported = false)
+      videoElement.src = m3u8;
+      videoElement.addEventListener("loadedmetadata", () => {
+        showLoading(false);
+        videoElement.play().catch(() => {});
+      });
+
+    } else {
+      throw new Error("HLS non supportato.");
+    }
+
+    // Tracking
+    trackVideoProgress(
+      id,
+      isMovie ? "movie" : "tv",
+      videoElement,
+      season,
+      episode
+    );
+  } catch (err) {
+    console.error("Errore iOS:", err);
+    showError("Errore iOS", err.message);
     showLoading(false);
-    
-    if (!hasStarted) {
-      // Tenta autoplay (muted per iOS)
-      if (isIOS) {
-        videoElement.muted = true;
-        videoElement.play().then(() => {
-          console.log("▶️ Autoplay riuscito su iOS");
-          hasStarted = true;
-          setTimeout(() => { 
-            videoElement.muted = false;
-          }, 1000);
-        }).catch(e => {
-          console.log("⏸️ Tocca per avviare su iOS");
-        });
-      } else {
-        videoElement.play().catch(e => {
-          console.log("⏸️ Tocca per avviare");
-        });
-      }
-    }
-  };
-  
-  videoElement.onerror = (e) => {
-    console.error("❌ Errore video:", videoElement.error);
-    showLoading(false);
-    
-    let errorMsg = "Errore sconosciuto";
-    if (videoElement.error) {
-      switch(videoElement.error.code) {
-        case 1: errorMsg = "Riproduzione annullata"; break;
-        case 2: errorMsg = "Errore di rete"; break;
-        case 3: errorMsg = "Formato video non supportato"; break;
-        case 4: errorMsg = "Formato HLS non compatibile"; break;
-      }
-    }
-    
-    if (isIOS) {
-      errorMsg += "<br><strong>Cosa provare su iOS:</strong><br>" +
-                  "1. Tocca il video per riprovare<br>" +
-                  "2. Prova un altro film/serie<br>" +
-                  "3. Controlla la connessione internet";
-    }
-    
-    showError("Errore riproduzione", errorMsg);
-    
-    // Tenta fallback automatico dopo 3 secondi
-    setTimeout(() => {
-      tryStreamFallback(videoElement, videoElement.src, isIOS);
-    }, 3000);
-  };
-  
-  videoElement.onplay = () => {
-    console.log("🎬 Riproduzione avviata");
-    showLoading(false);
-    hasStarted = true;
-  };
-  
-  videoElement.onwaiting = () => {
-    showLoading(true, "Buffering...");
-  };
-  
-  videoElement.onplaying = () => {
-    showLoading(false);
-  };
-  
-  // Gestione tap su iOS per avviare
-  if (isIOS) {
-    videoElement.addEventListener('click', () => {
-      if (videoElement.paused && !hasStarted) {
-        videoElement.muted = true;
-        videoElement.play().then(() => {
-          hasStarted = true;
-          setTimeout(() => { videoElement.muted = false; }, 1000);
-        });
-      }
-    });
   }
 }
 
-// Fallback per stream problematici
-async function tryStreamFallback(videoElement, originalUrl, isIOS = false) {
-  console.log("🔄 Attivazione fallback");
-  
-  try {
-    // 1. Prova a forzare HTTPS
-    if (originalUrl.startsWith('http://')) {
-      const httpsUrl = originalUrl.replace('http://', 'https://');
-      console.log("🔒 Provo HTTPS:", httpsUrl);
-      videoElement.src = httpsUrl;
-      videoElement.load();
-      return;
-    }
-    
-    // 2. Prova servizi alternativi
-    if (isIOS) {
-      await tryAlternativeServices(videoElement, isIOS);
-      return;
-    }
-    
-    // 3. Prova stream di test garantito
-    console.log("📺 Provo stream di test");
-    const testStreams = [
-      "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", // MPEG-TS H.264
-      "https://content.jwplatform.com/manifests/vM7nH0Kl.m3u8", // H.264 AAC
-      "https://bitdash-a.akamaihd.net/s/content/media/Manifest.m3u8" // Akamai test
-    ];
-    
-    videoElement.src = testStreams[0];
-    videoElement.load();
-    
-    // Cambia titolo per indicare modalità test
-    const currentTitle = document.getElementById("player-title").textContent;
-    if (!currentTitle.includes("(Modalità test)")) {
-      document.getElementById("player-title").textContent = currentTitle + " (Modalità test)";
-    }
-    
-  } catch (fallbackError) {
-    console.error("❌ Fallback fallito:", fallbackError);
-    showError("Fallback fallito", "Impossibile trovare uno stream compatibile");
-  }
+// ==================== STAGIONI TV (solo iOS) ====================
+async function loadTVSeasonsIOS(tvId) {
+  const seasons = await fetchTVSeasons(tvId);
+  const usable = seasons.filter(s => s.season_number > 0);
+
+  const selector = document.getElementById("season-select");
+  selector.innerHTML = "";
+  usable.forEach(season => {
+    const opt = document.createElement("option");
+    opt.value = season.season_number;
+    opt.textContent = `Stagione ${season.season_number}`;
+    selector.appendChild(opt);
+  });
+
+  document.getElementById("episode-selector").style.display = "block";
+
+  selector.onchange = () => loadEpisodesIOS(tvId, parseInt(selector.value));
+
+  if (usable.length > 0) loadEpisodesIOS(tvId, usable[0].season_number);
 }
 
-// Prova servizi alternativi (soprattutto per iOS)
-async function tryAlternativeServices(videoElement, isIOS = false) {
-  console.log("🌐 Provo servizi alternativi");
-  
-  const currentItemId = currentItem?.id;
-  if (!currentItemId) return;
-  
-  const isMovie = currentItem.title ? true : false;
-  
-  try {
-    // Servizi alternativi per streaming
-    const altServices = [
-      // Service 1: Vidsrc
-      `https://vidsrc.xyz/vidsrc/${currentItemId}${!isMovie ? `/1/1` : ''}`,
-      
-      // Service 2: 2embed
-      `https://www.2embed.cc/embed/${currentItemId}${!isMovie ? `/1/1` : ''}`,
-      
-      // Service 3: Autoembed
-      `https://autoembed.co/${isMovie ? 'movie' : 'tv'}/tmdb/${currentItemId}${!isMovie ? '-1-1' : ''}`
-    ];
-    
-    for (const serviceUrl of altServices) {
-      try {
-        console.log("🔗 Provo servizio:", serviceUrl);
-        
-        // Usa proxy CORS
-        const proxyUrl = applyCorsProxy(serviceUrl);
-        const response = await fetch(proxyUrl, {
-          headers: {
-            'User-Agent': isIOS 
-              ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
-              : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-        });
-        
-        if (response.ok) {
-          const html = await response.text();
-          
-          // Cerca stream HLS
-          const hlsPattern = /(https?:\/\/[^"\s]+\.m3u8[^"\s]*)/gi;
-          const matches = html.match(hlsPattern);
-          
-          if (matches && matches.length > 0) {
-            for (const match of matches) {
-              let url = match.replace(/["']/g, '').split(' ')[0];
-              if (url.includes('.m3u8')) {
-                // Ottimizza per dispositivo
-                url = await optimizeStreamUrl(url);
-                
-                console.log("✅ Trovato stream alternativo:", url.substring(0, 100));
-                
-                videoElement.src = url;
-                videoElement.load();
-                return;
-              }
-            }
-          }
-        }
-      } catch (serviceError) {
-        console.log("❌ Servizio fallito:", serviceError.message);
-        continue;
-      }
-    }
-    
-    throw new Error("Nessun servizio alternativo disponibile");
-    
-  } catch (error) {
-    console.error("❌ Tutti i servizi alternativi falliti:", error);
-    throw error;
-  }
-}
+// ==================== EPISODI TV (solo iOS) ====================
+async function loadEpisodesIOS(tvId, seasonNum) {
+  const episodes = await fetchEpisodes(tvId, seasonNum);
+  const container = document.getElementById("episodes-list");
+  container.innerHTML = "";
 
-// Pulisci player
-function cleanupPlayer() {
-  // Distruggi hls.js se esiste
-  if (hlsInstance) {
-    hlsInstance.destroy();
-    hlsInstance = null;
-  }
-  
-  // Pulisci elemento video
-  const videoElement = document.getElementById("player-video");
-  if (videoElement) {
-    videoElement.pause();
-    videoElement.src = "";
-    videoElement.load();
-  }
+  episodes.forEach(ep => {
+    const div = document.createElement("div");
+    div.className = "episode-item";
+
+    div.innerHTML = `
+      <div class="episode-number">Episodio ${ep.episode_number}</div>
+      <div class="episode-title">${ep.name || "Senza titolo"}</div>
+    `;
+
+    div.onclick = () => {
+      container.querySelectorAll(".episode-item").forEach(e => e.classList.remove("active"));
+      div.classList.add("active");
+      loadVideoIOS(false, tvId, seasonNum, ep.episode_number);
+    };
+
+    container.appendChild(div);
+  });
 }
 
 // ==================== DESKTOP/ANDROID PLAYER (Video.js) ====================
