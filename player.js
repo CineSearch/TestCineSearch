@@ -206,66 +206,42 @@ function configureVideoForIOS(videoElement) {
 
 // VERSIONE DI getDirectStream PER iOS - OTTIMIZZATA PER FORMATO iOS
 async function getDirectStreamIOS(tmdbId, isMovie, season = null, episode = null) {
-  console.log("📱 iOS - Estrazione stream ottimizzata per iOS");
-  
-  try {
-    showLoading(true, "iOS: connessione al server...");
+  const vixsrcUrl = `https://${VIXSRC_URL}/${isMovie ? "movie" : "tv"}/${tmdbId}` +
+                     (!isMovie && season !== null && episode !== null ? `/${season}/${episode}` : '');
 
-    let vixsrcUrl = `https://${VIXSRC_URL}/${isMovie ? "movie" : "tv"}/${tmdbId}`;
-    if (!isMovie && season !== null && episode !== null) {
-      vixsrcUrl += `/${season}/${episode}`;
-    }
+  const proxies = [
+    'https://api.allorigins.win/raw?url=',
+    'https://corsproxy.io/?',
+    'https://cors-anywhere.herokuapp.com/'
+  ];
 
-    console.log("🔗 iOS - Vixsrc URL:", vixsrcUrl);
-    
-    // SU iOS USA PROXY SPECIFICO PER HLS
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(vixsrcUrl)}`;
-    const response = await fetch(proxyUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+  for (const proxy of proxies) {
+    try {
+      const proxyUrl = proxy + encodeURIComponent(vixsrcUrl);
+      const response = await fetch(proxyUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+        }
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      let html = await response.text();
+
+      // Estrai URL HLS compatibile
+      let m3u8Url = await extractIOSCompatibleM3u8(html, vixsrcUrl);
+      if (m3u8Url) {
+        m3u8Url = await optimizeUrlForIOS(m3u8Url);
+        return { m3u8Url };
       }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
-    const html = await response.text();
-    console.log("📄 iOS - HTML ricevuto");
 
-    showLoading(true, "iOS: estrazione stream compatibile...");
-
-    // PRIMA PROVA: Cerca direttamente URL m3u8 che potrebbero funzionare su iOS
-    let m3u8Url = await extractIOSCompatibleM3u8(html, vixsrcUrl);
-    
-    if (!m3u8Url) {
-      // SECONDA PROVA: Usa la logica normale ma poi converte per iOS
-      m3u8Url = await extractAndConvertForIOS(html, vixsrcUrl);
+    } catch (e) {
+      console.warn(`Proxy fallito: ${proxy}`, e.message);
+      continue; // prova il prossimo proxy
     }
-    
-    if (!m3u8Url) {
-      throw new Error("Impossibile estrarre stream compatibile con iOS");
-    }
-    
-    // TERZA PROVA: Verifica e converte l'URL per iOS
-    m3u8Url = await optimizeUrlForIOS(m3u8Url);
-    
-    console.log("✅ iOS - URL ottimizzato:", m3u8Url.substring(0, 100) + "...");
-    
-    showLoading(false);
-    
-    return {
-      iframeUrl: vixsrcUrl,
-      m3u8Url: m3u8Url,
-    };
-    
-  } catch (error) {
-    console.error("❌ iOS - Errore in getDirectStreamIOS:", error);
-    showLoading(false);
-    
-    // Fallback a servizio alternativo specifico per iOS
-    return await getIOSCompatibleStream(tmdbId, isMovie, season, episode);
   }
+
+  // Se nessun proxy funziona, fallback test stream
+  return { m3u8Url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" };
 }
 
 // Estrai URL m3u8 che potrebbero funzionare su iOS
