@@ -422,8 +422,23 @@ function isSafari() {
 }
 
 function shouldUseNativePlayer() {
-    return (isIOS() || isSafari()) && !navigator.userAgent.includes('CriOS');
+    const ua = navigator.userAgent;
+
+    // 1️⃣ iPhone / iPad / iPod
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+    // 2️⃣ Safari vero, NON Chrome, NON CriOS, NON FxiOS, NON EdgiOS
+    const isRealSafari =
+        /Safari/i.test(ua) &&
+        !/CriOS/i.test(ua) &&
+        !/Chrome/i.test(ua) &&
+        !/FxiOS/i.test(ua) &&
+        !/EdgiOS/i.test(ua) &&
+        !/SamsungBrowser/i.test(ua);
+
+    return isIOS && isRealSafari;
 }
+
 
 function hideAllSections() {
   const sections = [

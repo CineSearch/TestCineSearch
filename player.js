@@ -147,55 +147,62 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
 // Player nativo per iOS/Safari
 async function loadVideoNative(isMovie, id, season = null, episode = null) {
   try {
-    const streamData = await getDirectStreamForiOS(isMovie, id, season, episode);
+    const streamData = await getDirectStream(id, isMovie, season, episode);
 
     if (!streamData || !streamData.m3u8Url) {
       throw new Error("Impossibile ottenere l'URL dello stream");
     }
 
-    const videoElement = document.getElementById("player-video");
-    if (!videoElement) {
-      throw new Error("Elemento video non trovato");
+    let m3u8Url = streamData.m3u8Url;
+
+    // 1️⃣ Fix HTTPS obbligatorio
+    if (m3u8Url.startsWith("http://")) {
+      m3u8Url = m3u8Url.replace("http://", "https://");
     }
 
-    // Configura il video element per iOS
-    videoElement.src = streamData.m3u8Url;
-    
-    // Aggiungi event listeners
-    videoElement.addEventListener('loadedmetadata', () => {
+    let videoElement = document.getElementById("player-video");
+    if (!videoElement) {
+      const videoContainer = document.querySelector(".video-container");
+      videoElement = document.createElement("video");
+      videoElement.id = "player-video";
+      videoElement.setAttribute("controls", "");
+      videoElement.setAttribute("playsinline", "");
+      videoElement.setAttribute("webkit-playsinline", "");
+      videoElement.setAttribute("preload", "auto");
+      videoElement.style.width = "100%";
+      videoElement.style.background = "#000";
+
+      // 2️⃣ Autoplay compatibile iOS
+      videoElement.muted = true;
+      videoElement.setAttribute("muted", "true");
+
+      videoContainer.insertBefore(videoElement, document.getElementById("loading-overlay"));
+    }
+
+    // 3️⃣ Usa elemento <source> (richiesto su iOS)
+    videoElement.innerHTML = "";
+    const source = document.createElement("source");
+    source.src = m3u8Url;
+    source.type = "application/vnd.apple.mpegurl"; 
+    videoElement.appendChild(source);
+
+    videoElement.addEventListener("loadedmetadata", () => {
       showLoading(false);
-      
-      // Traccia il progresso
-      trackVideoProgress(
-        currentItem.id,
-        currentItem.media_type || (currentItem.title ? "movie" : "tv"),
-        videoElement,
-        season,
-        episode
-      );
-      
-      // Prova a fare play
-      videoElement.play().catch(e => {
-        // console.log("Auto-play bloccato su iOS:", e);
+
+      videoElement.play().catch(() => {
+        // Aspetta interazione utente
       });
     });
 
-    videoElement.addEventListener('error', (e) => {
-      console.error("Errore video iOS:", e);
-      showError("Errore durante il caricamento del video");
+    videoElement.addEventListener("error", () => {
+      showError("Errore durante il caricamento del video (iOS)");
     });
-
-    videoElement.addEventListener('playing', () => {
-      showLoading(false);
-    });
-
-    nativeVideoElement = videoElement;
 
   } catch (err) {
-    console.error("Errore loadVideoNative:", err);
-    throw err;
+    showError("Impossibile avviare il video su iOS");
   }
 }
+
 
 // Video.js per altri browser
 async function loadVideoWithVideoJS(isMovie, id, season = null, episode = null) {
