@@ -140,7 +140,7 @@ async function loadVideoIOS(isMovie, id, season = null, episode = null) {
     }
     
     // Reset completo del video element
-    videoElement.src = "";
+    videoElement.src = "/iosproxy?url=" + encodeURIComponent(m3u8Url);
     videoElement.innerHTML = "";
     
     // Configurazione avanzata per iOS
