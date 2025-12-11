@@ -4,7 +4,7 @@ let currentItem = null;
 let currentSeasons = [];
 let nativeVideoElement = null;
 
-// Rilevamento iOS semplificato
+// Rilevamento iOS
 function shouldUseNativePlayer() {
   const ua = navigator.userAgent || navigator.vendor || window.opera;
   return /iPad|iPhone|iPod/.test(ua) || 
@@ -40,30 +40,20 @@ async function openPlayer(item) {
   const videoContainer = document.querySelector(".video-container");
   const newVideo = document.createElement("video");
   newVideo.id = "player-video";
-  
-  if (shouldUseNativePlayer()) {
-    console.log("📱 Configurazione iOS");
-    newVideo.className = "native-video-ios";
-    newVideo.setAttribute("controls", "");
-    newVideo.setAttribute("preload", "auto");
-    newVideo.setAttribute("playsinline", "");
-    newVideo.setAttribute("webkit-playsinline", "");
-    newVideo.setAttribute("crossorigin", "anonymous");
-    newVideo.style.cssText = `
-      width: 100%;
-      height: auto;
-      max-height: 70vh;
-      background: #000;
-      border-radius: 12px;
-      display: block;
-    `;
-  } else {
-    newVideo.className = "video-js vjs-theme-vixflix vjs-big-play-centered";
-    newVideo.setAttribute("controls", "");
-    newVideo.setAttribute("preload", "auto");
-    newVideo.setAttribute("playsinline", "");
-    newVideo.setAttribute("crossorigin", "anonymous");
-  }
+  newVideo.className = "native-video-ios";
+  newVideo.setAttribute("controls", "");
+  newVideo.setAttribute("preload", "auto");
+  newVideo.setAttribute("playsinline", "");
+  newVideo.setAttribute("webkit-playsinline", "");
+  newVideo.setAttribute("crossorigin", "anonymous");
+  newVideo.style.cssText = `
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    background: #000;
+    border-radius: 12px;
+    display: block;
+  `;
   
   const loadingOverlay = document.getElementById("loading-overlay");
   if (loadingOverlay) {
@@ -155,40 +145,42 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
   }
 }
 
-// NUOVA FUNZIONE PER iOS - SEMPLIFICATA
+// NUOVO METODO ROBUSTO PER iOS
 async function loadVideoIOS(isMovie, id, season = null, episode = null) {
-  console.log("📱 iOS - Inizio caricamento");
+  console.log("📱 iOS - Inizio caricamento con metodo robusto");
   
   try {
     showLoading(true, "iOS: ricerca stream...");
     
-    // PRIMA PROVA: getDirectStream normale
+    // STRATEGIA 1: Prova con metodo speciale per iOS
     let streamData = null;
     try {
-      streamData = await getDirectStreamIOS(id, isMovie, season, episode);
-      console.log("✅ getDirectStreamIOS risultato:", streamData ? "OK" : "NULL");
+      streamData = await getStreamForiOSRobust(isMovie, id, season, episode);
+      console.log("✅ Metodo robusto risultato:", streamData ? "OK" : "NULL");
     } catch (error) {
-      console.log("⚠️ getDirectStreamIOS fallito:", error.message);
+      console.log("⚠️ Metodo robusto fallito:", error.message);
       streamData = null;
     }
     
-    // SECONDA PROVA: se fallisce, prova API alternativa
+    // STRATEGIA 2: Se fallisce, prova servizio proxy alternativo
     if (!streamData || !streamData.m3u8Url) {
-      console.log("🔄 iOS - Tentativo API alternativa");
+      console.log("🔄 iOS - Tentativo servizio proxy alternativo");
       try {
-        streamData = await getStreamFromIOSApi(id, isMovie, season, episode);
+        streamData = await getStreamFromExternalService(isMovie, id, season, episode);
       } catch (apiError) {
-        console.log("❌ API alternativa fallita:", apiError.message);
+        console.log("❌ Servizio proxy fallito:", apiError.message);
       }
     }
     
-    // TERZA PROVA: se tutto fallisce, usa stream di test
+    // STRATEGIA 3: Se tutto fallisce, usa stream di test
     if (!streamData || !streamData.m3u8Url) {
       console.log("📺 iOS - Usando stream di test");
       streamData = {
         m3u8Url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8",
-        source: "ios_test_fallback"
+        source: "ios_test_fallback",
+        title: "Stream dimostrativo"
       };
+      showIOSMessage("⚠️ Modalità dimostrativa<br>Stream di test attivo");
     }
     
     console.log("🔗 iOS - URL finale:", streamData.m3u8Url);
@@ -199,22 +191,37 @@ async function loadVideoIOS(isMovie, id, season = null, episode = null) {
       throw new Error("Elemento video non trovato");
     }
     
+    // Aggiorna titolo se siamo in modalità test
+    if (streamData.source === "ios_test_fallback") {
+      document.getElementById("player-title").textContent = 
+        (currentItem.title || currentItem.name) + " (Modalità dimostrativa)";
+    }
+    
     // Salva riferimento
     nativeVideoElement = videoElement;
     
     // Configura event listener
+    let hasStarted = false;
+    
     videoElement.onloadedmetadata = () => {
       console.log("✅ iOS - Video pronto");
       showLoading(false);
       
-      // Tenta autoplay (muted per iOS)
-      videoElement.muted = true;
-      videoElement.play().then(() => {
-        console.log("▶️ iOS - Autoplay riuscito");
-        setTimeout(() => { videoElement.muted = false; }, 1000);
-      }).catch(e => {
-        console.log("⏸️ iOS - Tocca il video per avviare");
-      });
+      if (!hasStarted) {
+        // Tenta autoplay (muted per iOS)
+        videoElement.muted = true;
+        videoElement.play().then(() => {
+          console.log("▶️ iOS - Autoplay riuscito");
+          hasStarted = true;
+          setTimeout(() => { 
+            videoElement.muted = false;
+            hideIOSMessage();
+          }, 1000);
+        }).catch(e => {
+          console.log("⏸️ iOS - Tocca il video per avviare");
+          showIOSMessage("▶️ Tocca il video per avviare la riproduzione");
+        });
+      }
     };
     
     videoElement.onerror = (e) => {
@@ -231,6 +238,8 @@ async function loadVideoIOS(isMovie, id, season = null, episode = null) {
     videoElement.onplay = () => {
       console.log("🎬 iOS - Riproduzione avviata");
       showLoading(false);
+      hasStarted = true;
+      hideIOSMessage();
     };
     
     // Imposta sorgente (assicura HTTPS)
@@ -255,145 +264,269 @@ async function loadVideoIOS(isMovie, id, season = null, episode = null) {
   }
 }
 
-// VERSIONE DI getDirectStream PER iOS (più tollerante)
-async function getDirectStreamIOS(tmdbId, isMovie, season = null, episode = null) {
-  console.log("🔍 iOS - Estrazione stream per:", { tmdbId, isMovie, season, episode });
+// NUOVO METODO ROBUSTO PER iOS
+async function getStreamForiOSRobust(isMovie, id, season = null, episode = null) {
+  console.log("🛡️ iOS - Metodo robusto attivato");
   
   try {
-    showLoading(true, "iOS: connessione...");
+    showLoading(true, "iOS: connessione speciale...");
     
-    let vixsrcUrl = `https://${VIXSRC_URL}/${isMovie ? "movie" : "tv"}/${tmdbId}`;
+    // Costruisci URL vixsrc
+    let vixsrcUrl = `https://${VIXSRC_URL}/${isMovie ? "movie" : "tv"}/${id}`;
     if (!isMovie && season !== null && episode !== null) {
       vixsrcUrl += `/${season}/${episode}`;
     }
     
     console.log("🔗 iOS - Target URL:", vixsrcUrl);
     
-    // Prova diversi proxy
-    const proxyUrl = applyCorsProxy(vixsrcUrl);
-    console.log("🔄 iOS - Proxy URL:", proxyUrl);
+    // METODO A: Usa proxy che simula browser iOS
+    const proxyUrls = [
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(vixsrcUrl)}`,
+      `https://corsproxy.io/?${encodeURIComponent(vixsrcUrl)}`,
+      `https://proxy.cors.sh/${vixsrcUrl}`
+    ];
     
-    const response = await fetch(proxyUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-      },
-      timeout: 10000 // 10 secondi timeout
-    });
+    let html = null;
+    let lastError = null;
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    // Prova tutti i proxy
+    for (const proxyUrl of proxyUrls) {
+      try {
+        console.log("🔄 iOS - Provo proxy:", proxyUrl.substring(0, 50) + "...");
+        
+        const response = await fetch(proxyUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'it-IT,it;q=0.9',
+            'Referer': 'https://vixsrc.to/'
+          },
+          timeout: 10000
+        });
+        
+        if (response.ok) {
+          html = await response.text();
+          console.log("✅ iOS - Proxy successo, lunghezza HTML:", html.length);
+          break;
+        }
+      } catch (error) {
+        lastError = error;
+        console.log("❌ iOS - Proxy fallito:", error.message);
+        continue;
+      }
     }
     
-    const html = await response.text();
-    console.log("📄 iOS - HTML ricevuto, lunghezza:", html.length);
-    
-    // METODO 1: Cerca URL m3u8 direttamente
-    const m3u8Pattern = /https?:\/\/[^\s"']+\.m3u8[^\s"']*/g;
-    const m3u8Matches = html.match(m3u8Pattern);
-    
-    if (m3u8Matches && m3u8Matches.length > 0) {
-      console.log("🎯 iOS - Trovati URL m3u8:", m3u8Matches.length);
-      let m3u8Url = m3u8Matches[0];
-      
-      // Pulisci URL
-      m3u8Url = m3u8Url.split('"')[0].split("'")[0].split(' ')[0];
-      
-      console.log("✅ iOS - URL estratto:", m3u8Url);
-      
-      return {
-        iframeUrl: vixsrcUrl,
-        m3u8Url: m3u8Url,
-        source: 'ios_direct_extraction'
-      };
+    if (!html) {
+      throw new Error("Tutti i proxy falliti: " + (lastError?.message || "Unknown"));
     }
     
-    // METODO 2: Cerca parametri
-    console.log("🔍 iOS - Tentativo estrazione parametri");
+    // Salva HTML per debug (solo in console)
+    console.log("📄 iOS - HTML ricevuto (primi 500 caratteri):", html.substring(0, 500));
     
-    // Pattern più flessibili
-    const paramsPattern = /params:\s*({[^}]+})/;
-    const paramsMatch = html.match(paramsPattern);
+    // Cerca URL m3u8 con pattern multipli
+    const m3u8Patterns = [
+      /https?:\/\/[^\s"']+\.m3u8[^\s"']*/g,
+      /["'](https?:\/\/[^"']+\.m3u8)["']/g,
+      /source:\s*["'](https?:\/\/[^"']+\.m3u8)["']/g,
+      /file:\s*["'](https?:\/\/[^"']+\.m3u8)["']/g,
+      /src:\s*["'](https?:\/\/[^"']+\.m3u8)["']/g
+    ];
     
-    if (paramsMatch) {
-      let paramsStr = paramsMatch[1];
-      console.log("📝 iOS - Parametri grezzi:", paramsStr.substring(0, 100) + "...");
+    let m3u8Url = null;
+    
+    for (const pattern of m3u8Patterns) {
+      const matches = html.match(pattern);
+      if (matches && matches.length > 0) {
+        // Prendi il primo URL che sembra valido
+        for (const match of matches) {
+          let url = match.replace(/["']/g, '').split(' ')[0].split(')')[0];
+          if (url.includes('.m3u8') && (url.includes('vixsrc') || url.includes('cloudflare'))) {
+            m3u8Url = url;
+            console.log("🎯 iOS - URL trovato con pattern:", url.substring(0, 100));
+            break;
+          }
+        }
+        if (m3u8Url) break;
+      }
+    }
+    
+    if (!m3u8Url) {
+      // Cerca nei dati JavaScript
+      console.log("🔍 iOS - Ricerca nei dati JS...");
       
-      // Prova a estrarre token e expires
-      const tokenMatch = paramsStr.match(/(?:token|t):\s*['"]?([0-9a-fA-F]+)['"]?/);
-      const expiresMatch = paramsStr.match(/(?:expires|e):\s*['"]?([0-9]+)['"]?/);
+      // Cerca oggetto masterPlaylist
+      const masterPlaylistPattern = /window\.masterPlaylist\s*=\s*({[^}]+})/;
+      const masterPlaylistMatch = html.match(masterPlaylistPattern);
       
-      if (tokenMatch && expiresMatch) {
-        const token = tokenMatch[1];
-        const expires = expiresMatch[1];
+      if (masterPlaylistMatch) {
+        const playlistStr = masterPlaylistMatch[1];
+        console.log("📝 iOS - Trovato masterPlaylist:", playlistStr.substring(0, 200));
         
-        // Cerca URL base
-        const urlPattern = /(?:url|source):\s*['"]([^'"]+)['"]/;
-        const urlMatch = html.match(urlPattern);
+        // Estrai URL e parametri
+        const urlMatch = playlistStr.match(/url:\s*'([^']+)'/);
+        const paramsMatch = playlistStr.match(/params:\s*({[^}]+})/);
         
-        if (urlMatch) {
-          let baseUrl = urlMatch[1];
-          const separator = baseUrl.includes('?') ? '&' : '?';
-          const m3u8Url = baseUrl + separator + `expires=${expires}&token=${token}`;
+        if (urlMatch && paramsMatch) {
+          const baseUrl = urlMatch[1];
+          const paramsStr = paramsMatch[1];
           
-          console.log("✅ iOS - URL costruito:", m3u8Url);
+          // Estrai token e expires
+          const tokenMatch = paramsStr.match(/token:\s*'([^']+)'/);
+          const expiresMatch = paramsStr.match(/expires:\s*'([^']+)'/);
           
-          return {
-            iframeUrl: vixsrcUrl,
-            m3u8Url: m3u8Url,
-            source: 'ios_params_extraction'
-          };
+          if (tokenMatch && expiresMatch) {
+            const token = tokenMatch[1];
+            const expires = expiresMatch[1];
+            const separator = baseUrl.includes('?') ? '&' : '?';
+            m3u8Url = `${baseUrl}${separator}expires=${expires}&token=${token}`;
+            console.log("🔧 iOS - URL costruito dai parametri");
+          }
         }
       }
     }
     
-    throw new Error("Impossibile estrarre stream");
+    if (!m3u8Url) {
+      // Ultimo tentativo: cerca qualsiasi cosa che assomigli a un URL con parametri
+      const anyUrlPattern = /https?:\/\/[^\s"']+\?expires=[^&]+&token=[^&"']+/g;
+      const anyMatches = html.match(anyUrlPattern);
+      if (anyMatches && anyMatches.length > 0) {
+        m3u8Url = anyMatches[0].split('"')[0].split("'")[0];
+        console.log("🎰 iOS - URL trovato con pattern generico");
+      }
+    }
+    
+    if (!m3u8Url) {
+      throw new Error("Impossibile trovare URL m3u8 nell'HTML");
+    }
+    
+    // Pulisci URL
+    m3u8Url = m3u8Url.trim();
+    
+    // Aggiungi parametro qualità se disponibile
+    if (html.includes('canPlayFHD') && html.includes('true')) {
+      m3u8Url += (m3u8Url.includes('?') ? '&' : '?') + 'h=1';
+    }
+    
+    console.log("✅ iOS - URL finale:", m3u8Url);
+    
+    return {
+      iframeUrl: vixsrcUrl,
+      m3u8Url: m3u8Url,
+      source: 'ios_robust_extraction'
+    };
     
   } catch (error) {
-    console.error("❌ iOS - getDirectStreamIOS errore:", error);
+    console.error("❌ iOS - Metodo robusto fallito:", error);
     return null;
   }
 }
 
-// API ALTERNATIVA PER iOS
-async function getStreamFromIOSApi(tmdbId, isMovie, season = null, episode = null) {
-  console.log("🌐 iOS - Tentativo API");
+// SERVIZIO ESTERNO PER STREAM
+async function getStreamFromExternalService(isMovie, id, season = null, episode = null) {
+  console.log("🌐 iOS - Tentativo servizio esterno");
   
   try {
     const type = isMovie ? 'movie' : 'tv';
-    let apiUrl = `https://vixsrc-proxy.vercel.app/api/stream?tmdb=${tmdbId}&type=${type}`;
+    
+    // Prova diversi servizi esterni
+    const services = [
+      `https://vixsrc-proxy.vercel.app/api/stream?tmdb=${id}&type=${type}`,
+      `https://movie-web-worker.vercel.app/api/stream?tmdb=${id}&type=${type}`,
+      `https://stream-finder-api.vercel.app/api/vixsrc?tmdb=${id}&type=${type}`
+    ];
     
     if (!isMovie && season && episode) {
-      apiUrl += `&season=${season}&episode=${episode}`;
+      services.forEach((url, index) => {
+        services[index] = url + `&season=${season}&episode=${episode}`;
+      });
     }
     
-    console.log("🔗 iOS - API URL:", apiUrl);
+    let result = null;
     
-    const response = await fetch(apiUrl, { timeout: 8000 });
-    
-    if (!response.ok) {
-      throw new Error(`API HTTP ${response.status}`);
+    for (const serviceUrl of services) {
+      try {
+        console.log("🔗 iOS - Provo servizio:", serviceUrl);
+        
+        const response = await fetch(serviceUrl, { 
+          timeout: 8000,
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.url && data.url.includes('.m3u8')) {
+            console.log("✅ iOS - Servizio successo, URL:", data.url);
+            result = {
+              m3u8Url: data.url,
+              source: 'external_service'
+            };
+            break;
+          }
+        }
+      } catch (error) {
+        console.log("❌ iOS - Servizio fallito:", error.message);
+        continue;
+      }
     }
     
-    const data = await response.json();
-    
-    if (data && data.url) {
-      console.log("✅ iOS - API successo, URL:", data.url);
-      return {
-        m3u8Url: data.url,
-        source: 'ios_api'
-      };
+    if (!result) {
+      throw new Error("Tutti i servizi esterni falliti");
     }
     
-    throw new Error("API ritornato dati non validi");
+    return result;
     
   } catch (error) {
-    console.error("❌ iOS - API fallita:", error);
+    console.error("❌ iOS - Servizi esterni falliti:", error);
     return null;
   }
 }
 
-// VIDEO.JS (invariato)
+// FUNZIONI HELPER PER iOS
+function showIOSMessage(message) {
+  hideIOSMessage();
+  
+  const msgDiv = document.createElement('div');
+  msgDiv.id = 'ios-message';
+  msgDiv.innerHTML = `
+    <div style="
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 9999;
+      max-width: 90%;
+      border: 2px solid #e50914;
+      font-size: 14px;
+    ">
+      ${message}
+    </div>
+  `;
+  
+  const videoContainer = document.querySelector(".video-container");
+  if (videoContainer) {
+    videoContainer.appendChild(msgDiv);
+    
+    // Auto-rimuovi dopo 5 secondi se non è un messaggio importante
+    if (!message.includes('Modalità dimostrativa')) {
+      setTimeout(hideIOSMessage, 5000);
+    }
+  }
+}
+
+function hideIOSMessage() {
+  const msg = document.getElementById('ios-message');
+  if (msg) msg.remove();
+}
+
+// VIDEO.JS (per desktop)
 async function loadVideoWithVideoJS(isMovie, id, season = null, episode = null) {
   try {
     setupVideoJsXhrHook();
@@ -581,6 +714,8 @@ function goBack() {
     nativeVideoElement.src = "";
     nativeVideoElement = null;
   }
+  
+  hideIOSMessage();
   
   const videoElement = document.getElementById("player-video");
   if (videoElement) {
