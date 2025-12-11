@@ -1609,3 +1609,65 @@ footer {
 .vertical-grid-container {
   display: block;
 }
+
+/* Stili per video nativo iOS */
+video:not(.video-js) {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* iOS fullscreen fix */
+video:not(.video-js):fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+}
+
+/* Controlli nativi iOS */
+video:not(.video-js)::-webkit-media-controls-panel {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+}
+
+video:not(.video-js)::-webkit-media-controls-play-button {
+  color: #2a09e5;
+}
+
+video:not(.video-js)::-webkit-media-controls-current-time-display,
+video:not(.video-js)::-webkit-media-controls-time-remaining-display {
+  color: white;
+}
+/* iOS video player styles */
+video:not(.video-js) {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 16/9 !important;
+  background: #000 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5) !important;
+  -webkit-appearance: none !important;
+}
+
+/* iOS fullscreen */
+video:not(.video-js)::-webkit-media-controls-fullscreen-button {
+  display: block !important;
+}
+
+/* iOS controls */
+video:not(.video-js)::-webkit-media-controls-panel {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+/* Hide Video.js controls on iOS */
+.video-js:not(.vjs-has-started) {
+  display: none !important;
+}
+
+/* Mostra sempre il video element su iOS */
+#player-video:not(.video-js) {
+  display: block !important;
+}

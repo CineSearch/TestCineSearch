@@ -50,6 +50,11 @@ const endpoints = {
 
 // Funzioni di utilità
 function applyCorsProxy(url) {
+  // Se siamo su iOS/Safari e stiamo richiedendo lo stream video, non usare proxy
+  if (shouldUseNativePlayer() && url.includes('.m3u8')) {
+    return url;
+  }
+  
   const CORS = document.getElementById("cors-select").value;
   const requiresEncoding = CORS_PROXIES_REQUIRING_ENCODING.some(
     (proxy) => CORS === proxy
