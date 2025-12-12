@@ -53,3 +53,58 @@ function extractBaseUrl(url) {
         return url;
     }
 }
+
+function getIOSProxyUrl(url) {
+    // Proxy specifici che funzionano meglio su iOS
+    const iosProxies = [
+        'https://api.allorigins.win/raw?url=',
+        'https://corsproxy.io/?',
+        'https://thingproxy.freeboard.io/fetch/',
+        'https://cors-anywhere.herokuapp.com/'
+    ];
+    
+    // Scegli un proxy casuale (per distribuire il carico)
+    const proxy = iosProxies[Math.floor(Math.random() * iosProxies.length)];
+    
+    // Assicurati che l'URL non sia già proxyato
+    if (url.includes('corsproxy.io') || url.includes('allorigins.win') || 
+        url.includes('cors-anywhere') || url.includes('thingproxy')) {
+        return url;
+    }
+    
+    return proxy + encodeURIComponent(url);
+}
+
+// Aggiorna applyCorsProxy per iOS
+function applyCorsProxy(url) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    
+    if (typeof addDebugLog !== 'undefined') {
+        addDebugLog(`CORS Proxy - iOS: ${isIOS}, URL: ${url.substring(0, 80)}...`, 'info');
+    }
+    
+    if (isIOS) {
+        return getIOSProxyUrl(url);
+    }
+    
+    // Codice esistente per altri dispositivi
+    if (url.includes('corsproxy.io') || url.includes('cors-anywhere') || 
+        url.includes('allorigins.win') || url.includes('api.codetabs.com')) {
+        return url;
+    }
+    
+    if (!currentCorsProxy || currentCorsProxy === '') {
+        return url;
+    }
+    
+    try {
+        const decodedUrl = decodeURIComponent(url);
+        if (decodedUrl.startsWith(currentCorsProxy)) {
+            return url;
+        }
+    } catch (e) {
+        // Ignora errori di decodifica
+    }
+    
+    return currentCorsProxy + encodeURIComponent(url);
+}

@@ -341,6 +341,25 @@
 <script src="mobile-storage.js"></script>
 <script src="mobile-content.js"></script>
 <script src="mobile-player.js"></script>
+<script src="mobile-ios-fix.js"></script>
 <script src="mobile-main.js"></script>
+
+<div id="mobile-debug-panel" class="mobile-debug-panel">
+    <div class="debug-panel-header" id="debug-drag-handle">
+        <span class="debug-panel-title">🔧 DEBUG iOS Player</span>
+        <button class="debug-panel-toggle" onclick="toggleDebugPanel()">×</button>
+    </div>
+    <div class="debug-panel-content" id="debug-panel-content">
+        <div class="debug-log-entry">
+            <div class="debug-log-time">00:00:00</div>
+            <div class="debug-log-message">Sistema debug inizializzato</div>
+        </div>
+    </div>
+</div>
+
+<div class="debug-controls">
+    <button class="debug-toggle-btn" onclick="toggleDebugPanel()">🔧</button>
+    <button class="debug-clear-btn" onclick="clearDebugLog()">Pulisci</button>
+</div>
 </body>
 </html>

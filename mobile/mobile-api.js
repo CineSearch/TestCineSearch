@@ -1,4 +1,8 @@
-// mobile-api.js - Gestione chiamate API
+function logApiCall(endpoint, status) {
+    if (typeof addDebugLog !== 'undefined') {
+        addDebugLog(`API ${endpoint}: ${status}`, status === 'success' ? 'success' : 'error');
+    }
+}
 
 const API_KEY = "f75aac685f3389aa89c4f8580c078a28";
 const VIXSRC_URL = "vixsrc.to";
@@ -31,6 +35,9 @@ async function fetchTMDB(endpoint, params = {}) {
 // ============ VERIFICA DISPONIBILITÀ ============
 async function checkAvailabilityOnVixsrc(tmdbId, isMovie, season = null, episode = null) {
     return new Promise((resolve) => {
+        if (typeof addDebugLog !== 'undefined') {
+            addDebugLog(`Verifica disponibilità: ${isMovie ? 'movie' : 'tv'} ${tmdbId}`, 'info');
+        }
         const timeout = setTimeout(() => {
             resolve(false);
         }, AVAILABILITY_CHECK_TIMEOUT);

@@ -1,19 +1,18 @@
 // ============ INIZIALIZZAZIONE ============
 document.addEventListener('DOMContentLoaded', function() {
-    // console.log('CineSearch Mobile inizializzato');
+    // Test debug system
+    setTimeout(() => {
+        if (typeof addDebugLog !== 'undefined') {
+            addDebugLog('CineSearch Mobile inizializzato', 'success');
+            addDebugLog(`User Agent: ${navigator.userAgent}`, 'info');
+            addDebugLog(`iOS: ${/iPad|iPhone|iPod/.test(navigator.userAgent)}`, 'info');
+        }
+    }, 1000);
+    
     initMobileUI();
     initMobileCors();
     loadMobileHomeData();
     cleanupExpiredStorage();
-    
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    `;
-    document.head.appendChild(style);
 });
 
 // ============ EVENT LISTENERS GLOBALI ============
