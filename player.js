@@ -129,52 +129,6 @@ async function loadVideoIOS(isMovie, id, season = null, episode = null) {
   }
 }
 
-// ==================== STAGIONI TV (solo iOS) ====================
-async function loadTVSeasonsIOS(tvId) {
-  const seasons = await fetchTVSeasons(tvId);
-  const usable = seasons.filter(s => s.season_number > 0);
-
-  const selector = document.getElementById("season-select");
-  selector.innerHTML = "";
-  usable.forEach(season => {
-    const opt = document.createElement("option");
-    opt.value = season.season_number;
-    opt.textContent = `Stagione ${season.season_number}`;
-    selector.appendChild(opt);
-  });
-
-  document.getElementById("episode-selector").style.display = "block";
-
-  selector.onchange = () => loadEpisodesIOS(tvId, parseInt(selector.value));
-
-  if (usable.length > 0) loadEpisodesIOS(tvId, usable[0].season_number);
-}
-
-// ==================== EPISODI TV (solo iOS) ====================
-async function loadEpisodesIOS(tvId, seasonNum) {
-  const episodes = await fetchEpisodes(tvId, seasonNum);
-  const container = document.getElementById("episodes-list");
-  container.innerHTML = "";
-
-  episodes.forEach(ep => {
-    const div = document.createElement("div");
-    div.className = "episode-item";
-
-    div.innerHTML = `
-      <div class="episode-number">Episodio ${ep.episode_number}</div>
-      <div class="episode-title">${ep.name || "Senza titolo"}</div>
-    `;
-
-    div.onclick = () => {
-      container.querySelectorAll(".episode-item").forEach(e => e.classList.remove("active"));
-      div.classList.add("active");
-      loadVideoIOS(false, tvId, seasonNum, ep.episode_number);
-    };
-
-    container.appendChild(div);
-  });
-}
-
 // ==================== DESKTOP/ANDROID PLAYER (Video.js) ====================
 async function openPlayerDesktop(item) {
   console.log("💻 Desktop - Apertura Video.js");
