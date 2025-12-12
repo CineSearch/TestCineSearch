@@ -52,7 +52,6 @@ function createMobileCard(item) {
     
     return card;
 }
-
 function populateMobileCarousel(containerId, items) {
     const container = document.getElementById(containerId);
     if (!container) return;

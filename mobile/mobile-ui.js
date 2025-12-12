@@ -257,27 +257,7 @@ function toggleMobileControls() {
         }
     }
 }
-// ============ REFRESH PLAYER CONTROLS ============
-function refreshMobilePlayerControls() {
-    console.log('Aggiornamento controlli player mobile...');
-    
-    if (!mobilePlayer) {
-        console.log('Nessun player attivo');
-        return;
-    }
-    
-    // Estrai qualità, audio e sottotitoli
-    extractAvailableQualities();
-    extractAudioTracks();
-    extractSubtitles();
-    
-    // Aggiorna UI
-    updateQualitySelector();
-    updateAudioSelector();
-    updateSubtitleSelector();
-    
-    showMobileError('Controlli aggiornati');
-}
+
 
 window.toggleMobileControls = toggleMobileControls;
 window.toggleControls = toggleControls;

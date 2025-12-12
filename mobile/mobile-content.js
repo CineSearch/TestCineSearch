@@ -117,22 +117,28 @@ async function loadTVMobile(page = 1) {
         if (!grid) return;
         
         grid.innerHTML = '';
-        
-        // Carica disponibilità per ogni serie
+
         const availableTV = [];
         for (const tv of data.results) {
             tv.media_type = "tv";
+            
             const isAvailable = await checkTvSeriesAvailability(tv.id);
             
             if (isAvailable) {
-                grid.appendChild(createMobileCard(tv));
-                availableTV.push(tv);
+                try {
+                    const details = await fetchTMDB(`tv/${tv.id}`);
+                    tv.seasons_count = details.seasons ? details.seasons.length : 0;
+                    
+                    grid.appendChild(createMobileCard(tv));
+                    availableTV.push(tv);
+                } catch (error) {
+
+                }
             }
             
             if (availableTV.length >= ITEMS_PER_PAGE) break;
         }
         
-        // Aggiorna paginazione
         updateTVPaginationMobile(data.total_pages, data.total_results);
         
         if (availableTV.length === 0) {
@@ -140,6 +146,7 @@ async function loadTVMobile(page = 1) {
                 <div class="empty-state">
                     <i class="fas fa-tv"></i>
                     <p>Nessuna serie TV disponibile trovata</p>
+                    <p style="font-size: 12px; opacity: 0.7;">Prova a cambiare filtro o proxy</p>
                 </div>
             `;
         }
