@@ -60,33 +60,48 @@ async function openPlayerIOS(item) {
 
 // ==================== CREAZIONE VIDEO iOS (semplice e ottimizzato) ====================
 function createIOSVideoElement() {
-  const old = document.getElementById("player-video");
-  if (old) old.remove();
-
-  const container = document.querySelector(".video-container");
-
-  const video = document.createElement("video");
-  video.id = "player-video";
-
-  // Attributi necessari per iOS
-  video.setAttribute("playsinline", "");
-  video.setAttribute("webkit-playsinline", "");
-  video.setAttribute("preload", "auto");
-  video.setAttribute("controls", "");
-  video.setAttribute("crossorigin", "anonymous");
-
-  // Stile consigliato per iOS
-  video.style.width = "100%";
-  video.style.height = "auto";
-  video.style.maxHeight = "70vh";
-  video.style.background = "#000";
-  video.style.borderRadius = "12px";
-  video.style.display = "block";
-  video.style.transform = "translateZ(0)";
-
-  container.prepend(video);
-  return video;
-}
+  // Pulisci video esistente
+  const oldVideo = document.getElementById("player-video");
+  if (oldVideo) oldVideo.remove();
+  
+  // Crea nuovo elemento video
+  const videoContainer = document.querySelector(".video-container");
+  const videoElement = document.createElement("video");
+  videoElement.id = "player-video";
+  videoElement.className = "hls-player";
+  videoElement.controls = true;
+  videoElement.preload = "auto";
+  videoElement.playsInline = true;
+  videoElement.crossOrigin = "anonymous";
+  
+  // Attributi specifici per iOS
+  if (shouldUseNativeHLS()) {
+    videoElement.setAttribute("webkit-playsinline", "");
+    videoElement.setAttribute("x-webkit-airplay", "allow");
+  }
+  
+  // Stili
+  videoElement.style.cssText = `
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    background: #000;
+    border-radius: 12px;
+    display: block;
+  `;
+  
+  // Performance per iOS
+  if (shouldUseNativeHLS()) {
+    videoElement.style.webkitTransform = "translateZ(0)";
+    videoElement.style.transform = "translateZ(0)";
+  }
+  
+  // Aggiungi al DOM
+  const loadingOverlay = document.getElementById("loading-overlay");
+  videoContainer.insertBefore(videoElement, loadingOverlay);
+  
+  return videoElement;
+}  
 
 // ==================== CARICAMENTO VIDEO (HLS.js) ====================
 async function loadVideoIOS(isMovie, id, season = null, episode = null) {
