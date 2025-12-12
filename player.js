@@ -11,6 +11,24 @@ function isIOSDevice() {
   return /iPad|iPhone|iPod/.test(ua);
 }
 
+function isSafariBrowser() {
+  const ua = navigator.userAgent|iPod/.test(ua);
+}
+
+funcwindow.opera;
+  return /Safari/.test(ua) && !/Chrome|Chromium|Edg|Firefox/.test(ua);
+}
+
+function shouldUseNativeHLS() {
+  // Safari su iOS o macOS supporta HLS nativamente
+  return isIOSDevice() || isSafariBrowser();
+}
+
+function shouldUseHlsJs() {
+  // Usa hls.js per tutti i browser tranne Safari
+  return !shouldUseNativeHLS();
+}
+
 // ==================== PLAYER iOS (SOLO HLS.js) ====================
 async function openPlayerIOS(item) {
   if (!isIOSDevice()) {
@@ -26,12 +44,15 @@ async function openPlayerIOS(item) {
   document.getElementById("player-title").textContent = title;
   document.getElementById("player-overview").textContent = item.overview || "...";
 
-  const isMovie = item.media_type === "movie" || item.title;
+  const mediaType = item.media_type || (item.title ? "movie" : "tv");
 
-  if (isMovie) {
-    await loadVideoIOS(true, item.id);
+  if (mediaType === "tv") {
+    document.getElementById("episode-warning").style.display = "flex";
+    await loadTVSeasons(item.id);
   } else {
-    await loadTVSeasonsIOS(item.id);
+    document.getElementById("episode-warning").style.display = "none";
+    document.getElementById("episode-selector").style.display = "none";
+    await loadVideo(true, item.id);
   }
 
   window.scrollTo(0, 0);
