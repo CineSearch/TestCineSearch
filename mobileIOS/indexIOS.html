@@ -14,7 +14,6 @@
 <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.css" />
     <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
     <header id="mobile-header">
@@ -330,7 +329,7 @@
     </nav>
     
     <footer class="mobile-footer">
-        <p>CineSearch Mobile v0.0</p>
+        <p>CineSearch Mobile v0.1</p>
         <p>© 2025 Copyright AIMODS | Forked by VixFlix</p>
     </footer>
     
@@ -340,12 +339,7 @@
 <script src="mobile-api.js"></script>
 <script src="mobile-storage.js"></script>
 <script src="mobile-content.js"></script>
-<script>
-    // Carica player corretto per iOS o altri dispositivi
-    const playerScript = document.createElement('script');
-    playerScript.src = isIOS() ? 'mobile-playerIOS.js' : 'mobile-player.js';
-    document.head.appendChild(playerScript);
-</script>
+<script src="mobile-player.js"></script>
 <script src="mobile-main.js"></script>
 </body>
 </html>
