@@ -1,3 +1,5 @@
+// mobile-storage.js - Gestione localStorage
+
 // ============ PREFERITI ============
 function getPreferiti() {
     const raw = localStorage.getItem("preferiti");
@@ -37,26 +39,29 @@ function checkIfFavorite(id, type) {
     return preferiti.includes(itemId);
 }
 
-function toggleFavoriteMobile(id, type, title, button, event) {
+function toggleFavoriteMobile(id, type, title, event) {
     if (event) event.stopPropagation();
     
     const preferiti = getPreferiti();
     const itemId = `${type}-${id}`;
     
     if (preferiti.includes(itemId)) {
-        removePreferito({id: id, media_type: type, title: title});
-        if (button) {
-            button.classList.remove('active');
-            button.innerHTML = '<i class="far fa-star"></i>';
+        // Rimuovi dai preferiti
+        removePreferito({id: id, media_type: type});
+        if (event && event.target) {
+            event.target.innerHTML = '<i class="fas fa-star"></i>';
+            event.target.classList.remove('active');
         }
     } else {
+        // Aggiungi ai preferiti
         addPreferito({id: id, media_type: type, title: title});
-        if (button) {
-            button.classList.add('active');
-            button.innerHTML = '<i class="fas fa-star"></i>';
+        if (event && event.target) {
+            event.target.innerHTML = '<i class="fas fa-star"></i>';
+            event.target.classList.add('active');
         }
     }
-
+    
+    // Se siamo nella sezione preferiti, ricarica
     if (currentMobileSection === 'preferiti') {
         loadPreferitiMobile();
     }
@@ -103,7 +108,7 @@ function cleanupExpiredStorage() {
                         i--;
                     }
                 } catch (e) {
-
+                    // Ignora errori di parsing
                 }
             }
         }
