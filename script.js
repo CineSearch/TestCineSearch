@@ -10,15 +10,12 @@ const CORS_LIST = [
   ...CORS_PROXIES_REQUIRING_ENCODING,
 ];
 
-// Impostiamo automaticamente corsproxy.io
 let CORS = "corsproxy.io/";
 
-// Dichiarazione delle variabili globali (senza re-inizializzare in altri file)
 let shownContinuaIds = new Set();
 let baseStreamUrl = "";
 let requestHookInstalled = false;
 
-// Variabili per gestire lo stato corrente
 let currentMoviePage = 1;
 let currentTVPage = 1;
 let totalMoviePages = 0;
@@ -26,7 +23,6 @@ let totalTVPages = 0;
 let currentCategory = null;
 let currentCategoryPage = 1;
 
-// Filtri anno
 let currentMovieMinYear = null;
 let currentMovieMaxYear = null;
 let currentTVMinYear = null;
@@ -34,7 +30,6 @@ let currentTVMaxYear = null;
 let currentMinYear = null;
 let currentMaxYear = null;
 
-// Variabili per la paginazione
 let currentNavigationSection = null;
 let currentNavigationPage = 1;
 let navigationItems = [];
@@ -48,13 +43,7 @@ const endpoints = {
   popularTV: `tv/popular`,
 };
 
-// Funzioni di utilità
 function applyCorsProxy(url) {
-  // Se siamo su iOS/Safari e stiamo richiedendo lo stream video, non usare proxy
-  if (shouldUseNativePlayer() && url.includes('.m3u8')) {
-    return url;
-  }
-  
   const CORS = document.getElementById("cors-select").value;
   const requiresEncoding = CORS_PROXIES_REQUIRING_ENCODING.some(
     (proxy) => CORS === proxy
@@ -136,12 +125,10 @@ function getFromStorage(name) {
     const item = localStorage.getItem(name);
     if (item) {
       const data = JSON.parse(item);
-      // Controlla se è scaduto
       if (!data.expires || data.expires > new Date().getTime()) {
         // console.log(`📖 localStorage letto: ${name}=${data.value}`);
         return data.value;
       } else {
-        // Rimuovi se scaduto
         localStorage.removeItem(name);
         // console.log(`🗑️ Rimosso scaduto: ${name}`);
       }
@@ -152,7 +139,6 @@ function getFromStorage(name) {
   return null;
 }
 
-// Funzione per pulire tutti i dati scaduti
 function cleanupExpiredStorage() {
   try {
     const now = new Date().getTime();
@@ -166,10 +152,10 @@ function cleanupExpiredStorage() {
           if (data.expires && data.expires < now) {
             localStorage.removeItem(key);
             removed++;
-            i--; // Adjust index after removal
+            i--; 
           }
         } catch (e) {
-          // Ignora errori di parsing
+
         }
       }
     }
@@ -182,7 +168,6 @@ function cleanupExpiredStorage() {
   }
 }
 
-// NUOVE FUNZIONI PER NAVIGATION-BUTTONS A PAGINAZIONE
 function showNavigationSection(section) {
   hideAllSections();
   currentNavigationSection = section;
@@ -242,7 +227,6 @@ async function loadNavigationContent(section, page = 1) {
         items = await loadTVForNavigation(page);
         break;
       case 'categories':
-        // Per le categorie, mostriamo la griglia di categorie
         loadCategories();
         return;
       case 'favorites':
@@ -267,7 +251,7 @@ async function loadMoviesForNavigation(page) {
   const data = await res.json();
   
   const availableMovies = [];
-  for (const movie of data.results.slice(0, 50)) { // Limita a 50 per performance
+  for (const movie of data.results.slice(0, 50)) {
     const isAvailable = await checkAvailabilityOnVixsrc(movie.id, true);
     if (isAvailable) {
       movie.media_type = "movie";
@@ -337,7 +321,6 @@ function displayNavigationItems(items, currentPage) {
     grid.appendChild(card);
   });
   
-  // Aggiorna info paginazione
   document.getElementById("page-info").textContent = 
     `Pagina ${currentPage} di ${Math.ceil(items.length / itemsPerPage)}`;
   document.getElementById("pagination-info").textContent = 
@@ -412,41 +395,13 @@ function showTrending() {
   window.scrollTo(0, 0);
 }
 
-
-function isIOS() {
-    return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-}
-
-function isSafari() {
-    return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-}
-
-function shouldUseNativePlayer() {
-    const ua = navigator.userAgent;
-
-    // 1️⃣ iPhone / iPad / iPod
-    const isIOS = /iPhone|iPad|iPod/i.test(ua);
-
-    // 2️⃣ Safari vero, NON Chrome, NON CriOS, NON FxiOS, NON EdgiOS
-    const isRealSafari =
-        /Safari/i.test(ua) &&
-        !/CriOS/i.test(ua) &&
-        !/Chrome/i.test(ua) &&
-        !/FxiOS/i.test(ua) &&
-        !/EdgiOS/i.test(ua) &&
-        !/SamsungBrowser/i.test(ua);
-
-    return isIOS && isRealSafari;
-}
-
-
 function hideAllSections() {
   const sections = [
     "home", 
     "allMovies", 
     "allTV", 
     "categories", 
-    "category-results",
+    "category-results", 
     "results", 
     "player", 
     "preferiti-section",
@@ -495,18 +450,18 @@ document.getElementById("cors-select").addEventListener("change", (e) => {
   }, 2000);
 });
 
-let searchTimeout;
-document.getElementById("search").addEventListener("input", (e) => {
-  clearTimeout(searchTimeout);
-  const query = e.target.value.trim();
-
-  if (query.length < 2) {
-    document.getElementById("results").style.display = "none";
-    document.getElementById("home").style.display = "block";
-    return;
+document.getElementById("search").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const query = e.target.value.trim();
+    
+    if (query.length < 2) {
+      alert("Inserisci almeno 2 caratteri per la ricerca");
+      return;
+    }
+    
+    performSearch(query);
   }
-
-  searchTimeout = setTimeout(() => performSearch(query), 500);
 });
 
 function debugCookies() {
@@ -521,6 +476,27 @@ function goBackToHome() {
   hideAllSections();
   document.getElementById("home").style.display = "block";
   window.scrollTo(0, 0);
+}
+
+function handleRemoteNavigation(event) {
+  switch(event.key) {
+    case 'Enter':
+    case ' ':
+      const focusedElement = document.activeElement;
+      if (focusedElement && focusedElement.classList.contains('card')) {
+        event.preventDefault();
+        focusedElement.click();
+      }
+      break;
+      
+    case 'Backspace':
+    case 'Escape':
+      if (document.getElementById("player").style.display === "block") {
+        event.preventDefault();
+        goBack();
+      }
+      break;
+  }
 }
 
 
@@ -542,9 +518,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     corsSelect.appendChild(option);
   });
   corsSelect.value = CORS;
-  
+
   await loadContinuaDaStorage();
-  
+
   await loadPreferiti();
   
   if (typeof videojs !== "undefined") {
@@ -552,7 +528,14 @@ window.addEventListener("DOMContentLoaded", async () => {
   } else {
     window.addEventListener("load", setupVideoJsXhrHook);
   }
-
+  document.addEventListener('keydown', handleRemoteNavigation);
+  
+  setTimeout(() => {
+    const firstCard = document.querySelector('.card');
+    if (firstCard) {
+      firstCard.focus();
+    }
+  }, 1000);
   for (const [key, endpoint] of Object.entries(endpoints)) {
     try {
       const data = await fetchAndFilterAvailable(key);

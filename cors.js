@@ -1,29 +1,35 @@
-// Gestione CORS e Video.js hooks
 const xhrRequestHook = (options) => {
   const originalUri = options.uri;
+  // console.log('🔧 cors.js - xhrRequestHook - URL originale:', originalUri);
   
-  // Su iOS, non usare proxy per gli stream video
-  if (shouldUseNativePlayer() && originalUri.includes('.m3u8')) {
-    return options;
-  }
+  const proxiedUri = applyCorsProxy(originalUri);
+  // console.log('🔧 cors.js - xhrRequestHook - URL con proxy:', proxiedUri);
   
-  options.uri = applyCorsProxy(originalUri);
+  options.uri = proxiedUri;
   return options;
 };
+
 function setupVideoJsXhrHook() {
+  // console.log('🔧 cors.js - setupVideoJsXhrHook chiamata');
+  
   if (typeof videojs === "undefined" || !videojs.Vhs) {
+    // console.log('🔧 cors.js - Video.js o VHS non disponibile');
     return;
   }
 
   if (requestHookInstalled) {
+    // console.log('🔧 cors.js - Hook già installato');
     return;
   }
 
   videojs.Vhs.xhr.onRequest(xhrRequestHook);
   requestHookInstalled = true;
+  // console.log('🔧 cors.js - Hook installato con successo');
 }
 
 function removeVideoJsXhrHook() {
+  // console.log('🔧 cors.js - removeVideoJsXhrHook chiamata');
+  
   if (
     typeof videojs !== "undefined" &&
     videojs.Vhs &&
@@ -31,10 +37,10 @@ function removeVideoJsXhrHook() {
   ) {
     videojs.Vhs.xhr.offRequest(xhrRequestHook);
     requestHookInstalled = false;
+    // console.log('🔧 cors.js - Hook rimosso');
   }
 }
 
-// Nascondi warning non necessari
 const originalconsoleWarn = console.warn;
 console.warn = function (...args) {
   const message = args[0];

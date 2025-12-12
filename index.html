@@ -1,10 +1,13 @@
-cambiamo video.js con hls.js. questa è la doc e devo cambiarlo dentro l'index.html come inizio:
-
 <!doctype html>
 <html lang="it">
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script>
+    if (!window.location.pathname.includes('mobile')) {
+        window.location.replace('mobile/index.html');
+    }
+</script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
 
@@ -49,7 +52,7 @@ cambiamo video.js con hls.js. questa è la doc e devo cambiarlo dentro l'index.h
       <div id="home">
         <section class="hero">
           <div class="hero-content">
-            <h1>Benvenuto su TestCineSearch1</h1>
+            <h1>Benvenuto su CineSearch Test</h1>
             <p>La tua piattaforma per film e serie TV</p>
             
             <div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
@@ -139,7 +142,20 @@ cambiamo video.js con hls.js. questa è la doc e devo cambiarlo dentro l'index.h
         </section>
       </div>
 
-      <div id="results"></div>
+      <!-- RISULTATI RICERCA - Modificato per usare griglia verticale -->
+      <section id="results" style="display: none;">
+        <div class="grid-header">
+          <button class="back-to-home" onclick="goBackToHome()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
+            ← Torna alla Home
+          </button>
+          <h2 id="results-title">Risultati ricerca</h2>
+        </div>
+        <div class="availability-check" id="search-checking" style="margin: 0 4% 1rem;"></div>
+        <div class="vertical-grid" id="search-grid"></div>
+        <div class="no-results" id="search-no-results" style="display: none; grid-column: 1 / -1; text-align: center; padding: 3rem; margin: 0 4%;">
+          Nessun risultato disponibile trovato
+        </div>
+      </section>
 
       <div id="player">
         <div class="player-header">
@@ -316,7 +332,7 @@ cambiamo video.js con hls.js. questa è la doc e devo cambiarlo dentro l'index.h
     Aggiungi contenuti ai preferiti per vederli qui
   </div>
 </section>
-    <script src="script.js"></script>
+<script src="script.js"></script>
 <script src="api.js"></script>
 <script src="cors.js"></script>
 <script src="preferiti.js"></script>
@@ -327,7 +343,7 @@ cambiamo video.js con hls.js. questa è la doc e devo cambiarlo dentro l'index.h
 <script src="ricerca.js"></script>
 <script src="player.js"></script>
 <footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.9rem; border-top: 1px solid #333; margin-top: 3rem;">
-  <p>© 2025 Copyright AIMODS | Forked by VixSrc</p>
+  <p>© 2025 Copyright AIMODS | Forked by VixFlix</p>
 </footer>
   </body>
 </html>

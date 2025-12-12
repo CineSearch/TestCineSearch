@@ -1,4 +1,3 @@
-// Funzioni per gestire i preferiti
 function getPreferiti() {
   const raw = localStorage.getItem("preferiti");
   return raw ? JSON.parse(raw) : [];
@@ -22,7 +21,6 @@ function removePreferito(item) {
   updatePreferitiCounter();
 }
 
-// Funzione per aggiornare il contatore dei preferiti nell'header
 function updatePreferitiCounter() {
   const preferiti = getPreferiti();
   const counter = document.getElementById("preferiti-count");
@@ -31,7 +29,6 @@ function updatePreferitiCounter() {
   }
 }
 
-// Funzione per caricare la sezione dedicata ai preferiti
 async function loadPreferitiSection() {
   const preferiti = getPreferiti();
   const carousel = document.getElementById("preferiti-section-carousel");
@@ -48,7 +45,7 @@ async function loadPreferitiSection() {
   
   if (message) message.style.display = "none";
   
-  for (const itemId of preferiti) {
+for (const itemId of preferiti) {
     const [mediaType, tmdbId] = itemId.split("-");
     
     try {
@@ -60,10 +57,9 @@ async function loadPreferitiSection() {
       
       const card = createCard(item, [], false);
       
-      // Aggiungi pulsante per rimuovere dai preferiti
       const removeBtn = document.createElement("button");
       removeBtn.className = "remove-btn preferiti-remove";
-      removeBtn.innerHTML = "❌ Rimuovi";
+      removeBtn.innerHTML = "⭐ Rimuovi";
       removeBtn.style.cssText = `
         position: absolute;
         bottom: 10px;
@@ -88,10 +84,8 @@ async function loadPreferitiSection() {
           removePreferito(item);
           card.remove();
           
-          // Aggiorna il contatore
           updatePreferitiCounter();
           
-          // Se non ci sono più preferiti, mostra il messaggio
           const updatedPreferiti = getPreferiti();
           if (updatedPreferiti.length === 0 && message) {
             message.style.display = "block";
@@ -103,12 +97,11 @@ async function loadPreferitiSection() {
       carousel.appendChild(card);
       
     } catch (error) {
-      // console.error(`Errore nel caricamento del preferito ${itemId}:`, error);
+      // console.log(`Errore nel caricamento del preferito ${itemId}:`, error);
     }
   }
 }
 
-// Funzione per caricare i preferiti nella home
 async function loadPreferiti() {
   const ids = getPreferiti();
   const items = [];
@@ -121,7 +114,7 @@ async function loadPreferiti() {
       data.media_type = mediaType;
       items.push(data);
     } catch (err) {
-      // console.error("❌ Errore nel recupero TMDB:", err);
+      // console.log("❌ Errore nel recupero TMDB:", err);
     }
   }
 
@@ -134,17 +127,18 @@ async function loadPreferiti() {
     const card = createCard(item, [], false);
 
     const removeBtn = document.createElement("button");
-    removeBtn.textContent = "Rimuovi dai preferiti";
+    removeBtn.innerHTML = "⭐ Rimuovi";
     removeBtn.className = "remove-btn";
     removeBtn.style.position = "absolute";
     removeBtn.style.bottom = "10px";
-    removeBtn.style.left = "10px";
+    removeBtn.style.left = "50%";
+    removeBtn.style.transform = "translateX(-50%)";
     removeBtn.style.background = "#e50914";
     removeBtn.style.color = "white";
     removeBtn.style.border = "none";
-    removeBtn.style.padding = "6px 12px";
+    removeBtn.style.padding = "8px 16px";
     removeBtn.style.borderRadius = "6px";
-    removeBtn.style.fontSize = "0.85rem";
+    removeBtn.style.fontSize = "0.9rem";
     removeBtn.style.fontWeight = "bold";
     removeBtn.style.cursor = "pointer";
     removeBtn.style.zIndex = "10";
@@ -167,7 +161,6 @@ async function loadPreferiti() {
   document.getElementById("preferiti").style.display = items.length > 0 ? "block" : "none";
 }
 
-// Funzione per scorrere i preferiti
 function scrollCarouselPreferiti(direction) {
   const carousel = document.getElementById("preferiti-section-carousel");
   if (!carousel) return;
