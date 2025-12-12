@@ -343,7 +343,15 @@
 <script src="mobile-player.js"></script>
 <script src="mobile-ios-fix.js"></script>
 <script src="mobile-main.js"></script>
-
+<script src="mobile-player-simple.js"></script>
+<script>
+// Selettivo in base a iOS
+if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+    document.write('<script src="mobile-player-simple.js"><\/script>');
+} else {
+    document.write('<script src="mobile-player.js"><\/script>');
+}
+</script>
 <div id="mobile-debug-panel" class="mobile-debug-panel">
     <div class="debug-panel-header" id="debug-drag-handle">
         <span class="debug-panel-title">🔧 DEBUG iOS Player</span>

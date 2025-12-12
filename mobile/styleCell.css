@@ -1434,3 +1434,136 @@ body {
     cursor: pointer;
     margin-top: 5px;
 }
+/* ============ DEBUG PANEL ============ */
+#mobile-debug-panel {
+    position: fixed;
+    top: 70px;
+    right: 10px;
+    width: 95%;
+    max-width: 400px;
+    max-height: 60vh;
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #e50914;
+    border-radius: 10px;
+    z-index: 99999;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    display: none;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+}
+
+.debug-panel-header {
+    background: #e50914;
+    color: white;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.debug-panel-title {
+    font-weight: bold;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.debug-panel-toggle {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+}
+
+#debug-panel-content {
+    padding: 10px;
+    max-height: calc(60vh - 40px);
+    overflow-y: auto;
+    color: #ffffff;
+}
+
+.debug-log-entry {
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    line-height: 1.4;
+}
+
+.debug-log-time {
+    color: #aaa;
+    font-size: 9px;
+    margin-bottom: 2px;
+}
+
+.debug-log-message {
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.debug-controls {
+    position: fixed;
+    bottom: 80px;
+    right: 10px;
+    z-index: 99998;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.debug-toggle-btn {
+    background: #e50914;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.debug-clear-btn {
+    background: #2a09e5;
+    color: white;
+    border: none;
+    border-radius: 15px;
+    padding: 6px 12px;
+    font-size: 11px;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.debug-toggle-btn:hover, .debug-clear-btn:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+/* Colori per tipi di log */
+.debug-log-entry[data-type="error"] .debug-log-message {
+    color: #ff4444;
+}
+
+.debug-log-entry[data-type="warning"] .debug-log-message {
+    color: #ffaa00;
+}
+
+.debug-log-entry[data-type="success"] .debug-log-message {
+    color: #00ff00;
+}
+
+.debug-log-entry[data-type="info"] .debug-log-message {
+    color: #ffffff;
+}
