@@ -3,49 +3,6 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
-    <script>
-    function getDeviceType() {
-        const ua = navigator.userAgent.toLowerCase();
-        
-        // Prima controlla per TV - ordine importante!
-        const isTV =
-            ua.includes("smarttv") ||
-            ua.includes("appletv") ||
-            ua.includes("googletv") ||
-            ua.includes("android tv") ||
-            ua.includes("fire tv") ||
-            ua.includes("aft") ||
-            ua.includes("tv") ||
-            // Aggiungi controlli specifici per Android TV
-            (ua.includes("android") && !ua.includes("mobile")) ||
-            (/android.*(tv|set-top|box)/i.test(ua));
-
-        const isIOS =
-            ua.includes("iphone") ||
-            ua.includes("ipad") ||
-            ua.includes("ipod");
-
-        const isMobileNonIOS =
-            /android.*mobile|webos|blackberry|iemobile|opera mini/i.test(ua);
-
-        if (isTV) return "tv";
-        if (isIOS) return "ios";
-        if (isMobileNonIOS) return "mobile";
-        return "desktop";
-    }
-
-    const device = getDeviceType();
-
-    if (!window.location.pathname.includes("mobile")) {
-        if (device === "ios") {
-            window.location.href = "mobileIOS/indexIOS.html";
-        } else if (device === "mobile") {
-            window.location.href = "mobile/index.html";
-        }
-    }
-</script>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
     <title>CineSearch Mobile</title>
