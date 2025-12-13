@@ -254,6 +254,21 @@
     
     <div class="mobile-video-container">
         <video id="mobile-player-video" class="video-js vjs-theme-vixflix" controls playsinline></video>
+
+        <div class="mobile-quick-actions">
+    <button class="mobile-quick-btn" onclick="showMobileQualitySelector()">
+        <i class="fas fa-hd"></i> Qualità
+    </button>
+    <button class="mobile-quick-btn" onclick="showMobileAudioSelector()">
+        <i class="fas fa-volume-up"></i> Audio
+    </button>
+    <button class="mobile-quick-btn" onclick="showMobileSubtitleSelector()">
+        <i class="fas fa-closed-captioning"></i> Sottotitoli
+    </button>
+    <button class="mobile-quick-btn" onclick="refreshMobilePlayerControls()">
+        <i class="fas fa-sync"></i> Aggiorna
+    </button>
+</div>
         
         <!--
 <div class="mobile-additional-controls" id="mobile-additional-controls">
