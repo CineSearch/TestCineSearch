@@ -255,45 +255,47 @@
     <div class="mobile-video-container">
         <video id="mobile-player-video" class="video-js vjs-theme-vixflix" controls playsinline></video>
         
-        <!-- Controlli aggiuntivi -->
-        <div class="mobile-additional-controls" id="mobile-additional-controls">
-            <div class="mobile-control-group">
-                <label for="mobile-quality-select"><i class="fas fa-hd"></i> Qualità</label>
-                <select id="mobile-quality-select" class="mobile-control-select">
-                    <option value="auto">Auto</option>
-                </select>
-            </div>
-            
-            <div class="mobile-control-group">
-                <label for="mobile-audio-select"><i class="fas fa-volume-up"></i> Lingua Audio</label>
-                <select id="mobile-audio-select" class="mobile-control-select">
-                    <option value="0">Italiano</option>
-                </select>
-            </div>
-            
-            <div class="mobile-control-group">
-                <label for="mobile-subtitle-select"><i class="fas fa-closed-captioning"></i> Sottotitoli</label>
-                <select id="mobile-subtitle-select" class="mobile-control-select">
-                    <option value="-1">Nessun sottotitolo</option>
-                </select>
-            </div>
-        </div>
-        
-        <!-- Azioni rapide -->
-        <div class="mobile-quick-actions">
-            <button class="mobile-quick-btn" onclick="showMobileQualitySelector()">
-                <i class="fas fa-hd"></i> Qualità
-            </button>
-            <button class="mobile-quick-btn" onclick="showMobileAudioSelector()">
-                <i class="fas fa-volume-up"></i> Audio
-            </button>
-            <button class="mobile-quick-btn" onclick="showMobileSubtitleSelector()">
-                <i class="fas fa-closed-captioning"></i> Sottotitoli
-            </button>
-            <button class="mobile-quick-btn" onclick="refreshMobilePlayerControls()">
-                <i class="fas fa-sync"></i> Aggiorna
-            </button>
-        </div>
+        <!--
+<div class="mobile-additional-controls" id="mobile-additional-controls">
+    <div class="mobile-control-group">
+        <label for="mobile-quality-select"><i class="fas fa-hd"></i> Qualità</label>
+        <select id="mobile-quality-select" class="mobile-control-select">
+            <option value="auto">Auto</option>
+        </select>
+    </div>
+    
+    <div class="mobile-control-group">
+        <label for="mobile-audio-select"><i class="fas fa-volume-up"></i> Lingua Audio</label>
+        <select id="mobile-audio-select" class="mobile-control-select">
+            <option value="0">Italiano</option>
+        </select>
+    </div>
+    
+    <div class="mobile-control-group">
+        <label for="mobile-subtitle-select"><i class="fas fa-closed-captioning"></i> Sottotitoli</label>
+        <select id="mobile-subtitle-select" class="mobile-control-select">
+            <option value="-1">Nessun sottotitolo</option>
+        </select>
+    </div>
+</div>
+
+<!-- Azioni rapide
+<div class="mobile-quick-actions">
+    <button class="mobile-quick-btn" onclick="showMobileQualitySelector()">
+        <i class="fas fa-hd"></i> Qualità
+    </button>
+    <button class="mobile-quick-btn" onclick="showMobileAudioSelector()">
+        <i class="fas fa-volume-up"></i> Audio
+    </button>
+    <button class="mobile-quick-btn" onclick="showMobileSubtitleSelector()">
+        <i class="fas fa-closed-captioning"></i> Sottotitoli
+    </button>
+    <button class="mobile-quick-btn" onclick="refreshMobilePlayerControls()">
+        <i class="fas fa-sync"></i> Aggiorna
+    </button>
+</div>
+-->
+    </div>
         
         <div class="mobile-player-info">
             <div id="mobile-player-meta"></div>
