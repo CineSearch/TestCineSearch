@@ -17,18 +17,6 @@
     
 </head>
 <body>
-    <script>
-(function () {
-    const ua = navigator.userAgent || "";
-
-    const isAndroidTV =
-        ua.includes("Android TV") ||
-        ua.includes("AndroidTV") ||
-        ua.includes("Leanback");
-
-    document.documentElement.classList.toggle("android-tv", isAndroidTV);
-})();
-</script>
     <header id="mobile-header">
         <div class="mobile-logo">
             <i class="fas fa-film"></i>
@@ -258,13 +246,6 @@
                 <select id="mobile-season-select"></select>
             </div>
             <div class="episodes-list-mobile" id="mobile-episodes-list"></div>
-        </div>
-    </div>
-</section>
-        
-        <div class="mobile-player-info">
-            <div id="mobile-player-meta"></div>
-            <div id="mobile-player-overview"></div>
         </div>
     </div>
 </section>
