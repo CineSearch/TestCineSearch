@@ -14,6 +14,20 @@
 <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@1.1.4/dist/videojs-hls-quality-selector.css" />
 <link rel="stylesheet" href="styleCell.css">
+
+    <script>
+(function () {
+    const ua = navigator.userAgent || "";
+
+    const isAndroidTV =
+        ua.includes("Android TV") ||
+        ua.includes("AndroidTV") ||
+        ua.includes("Leanback");
+
+    document.documentElement.classList.toggle("android-tv", isAndroidTV);
+})();
+</script>
+    
 </head>
 <body>
     <header id="mobile-header">
