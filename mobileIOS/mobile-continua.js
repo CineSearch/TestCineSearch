@@ -221,3 +221,4 @@ function updateContinuaVisione() {
 window.showContinuaMobile = showContinuaMobile;
 window.playContinueItem = playContinueItem;
 window.removeContinueItem = removeContinueItem;
+window.handlePlayClick = handlePlayClick;

@@ -247,6 +247,7 @@ function toggleControls() {
 
 window.showContinuaMobile = showContinuaMobile;
 window.toggleControls = toggleControls;
+window.refreshMobilePlayerControls = refreshMobilePlayerControls;
 window.showMobileQualitySelector = showMobileQualitySelector;
 window.showMobileAudioSelector = showMobileAudioSelector;
 window.showMobileSubtitleSelector = showMobileSubtitleSelector;
