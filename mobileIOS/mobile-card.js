@@ -28,9 +28,9 @@ function createMobileCard(item) {
             <div class="mobile-card-title" title="${title}">${displayTitle}</div>
             <div class="mobile-card-meta">${year} • ${isMovie ? '🎬 Film' : '📺 Serie'}</div>
             <div class="mobile-card-buttons">
-                <button class="mobile-card-btn play" onclick="playItemMobile(${item.id}, '${mediaType}', event)">
-                    <i class="fas fa-play"></i>
-                </button>
+            <button class="mobile-card-btn play" onclick="openMobilePlayer(${JSON.stringify(item).replace(/"/g, '&quot;')}, event)">
+                <i class="fas fa-play"></i>
+            </button>
                 <button class="mobile-card-btn fav" 
                         onclick="toggleFavoriteMobile(${item.id}, '${mediaType}', '${title.replace(/'/g, "\\'")}', event)"
                         data-fav="${isFav}">
@@ -49,6 +49,7 @@ function createMobileCard(item) {
     
     return card;
 }
+
 
 function populateMobileCarousel(containerId, items) {
     const container = document.getElementById(containerId);

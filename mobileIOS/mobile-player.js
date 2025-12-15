@@ -24,6 +24,9 @@ async function openMobilePlayer(item) {
     // Pulisci controlli aggiuntivi
     hideAdditionalControls();
     
+    // Nascondi selettore episodi inizialmente
+    document.getElementById('mobile-episode-selector').style.display = 'none';
+    
     // Carica dettagli
     try {
         const details = await fetchTMDB(`${mediaType}/${item.id}`);
@@ -51,13 +54,15 @@ async function openMobilePlayer(item) {
             overviewDiv.textContent = details.overview || "Nessuna descrizione disponibile.";
         }
         
-        // Se è serie TV, carica stagioni
+        // Se è serie TV, carica stagioni ma NON avviare la riproduzione automatica
         if (mediaType === 'tv') {
             document.getElementById('mobile-episode-selector').style.display = 'block';
             await loadTVSeasonsMobile(item.id);
+            
+            // NON avviare la riproduzione automaticamente
+            // L'utente deve selezionare un episodio
         } else {
-            document.getElementById('mobile-episode-selector').style.display = 'none';
-            // Avvia immediatamente la riproduzione per i film
+            // Per i film, avvia immediatamente la riproduzione
             setTimeout(() => playItemMobile(item.id, mediaType), 500);
         }
         
@@ -745,68 +750,6 @@ function playTVEpisodeMobile(tmdbId, seasonNumber, episodeNumber) {
     playItemMobile(tmdbId, 'tv', seasonNumber, episodeNumber);
 }
 
-// Modifica la funzione openMobilePlayer per gestire meglio le serie TV
-async function openMobilePlayer(item) {
-    console.log("Apertura player per:", item);
-    
-    currentMobileItem = item;
-    showMobileSection('mobile-player');
-    
-    const title = item.title || item.name;
-    const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
-    
-    document.getElementById('mobile-player-title').textContent = title;
-    
-    // Pulisci controlli aggiuntivi
-    hideAdditionalControls();
-    
-    // Nascondi selettore episodi inizialmente
-    document.getElementById('mobile-episode-selector').style.display = 'none';
-    
-    // Carica dettagli
-    try {
-        const details = await fetchTMDB(`${mediaType}/${item.id}`);
-        
-        const metaDiv = document.getElementById('mobile-player-meta');
-        const overviewDiv = document.getElementById('mobile-player-overview');
-        
-        if (metaDiv) {
-            let meta = [];
-            if (details.release_date || details.first_air_date) {
-                meta.push(new Date(details.release_date || details.first_air_date).getFullYear());
-            }
-            if (details.vote_average) {
-                meta.push(`⭐ ${details.vote_average.toFixed(1)}/10`);
-            }
-            if (details.runtime) {
-                const hours = Math.floor(details.runtime / 60);
-                const minutes = details.runtime % 60;
-                meta.push(`${hours}h ${minutes}m`);
-            }
-            metaDiv.textContent = meta.join(' • ');
-        }
-        
-        if (overviewDiv) {
-            overviewDiv.textContent = details.overview || "Nessuna descrizione disponibile.";
-        }
-        
-        // Se è serie TV, carica stagioni ma NON avviare la riproduzione automatica
-        if (mediaType === 'tv') {
-            document.getElementById('mobile-episode-selector').style.display = 'block';
-            await loadTVSeasonsMobile(item.id);
-            
-            // NON avviare la riproduzione automaticamente
-            // L'utente deve selezionare un episodio
-        } else {
-            // Per i film, avvia immediatamente la riproduzione
-            setTimeout(() => playItemMobile(item.id, mediaType), 500);
-        }
-        
-    } catch (error) {
-        console.error('Errore caricamento dettagli:', error);
-        showMobileError('Errore nel caricamento dei dettagli');
-    }
-}
 // ============ UTILITY LINGUE ============
 function getLanguageName(code) {
     const languages = {
