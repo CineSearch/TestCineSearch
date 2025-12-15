@@ -21,13 +21,8 @@ async function openMobilePlayer(item) {
     
     document.getElementById('mobile-player-title').textContent = title;
     
-    // Pulisci controlli aggiuntivi
     hideAdditionalControls();
     
-    // Nascondi selettore episodi inizialmente
-    document.getElementById('mobile-episode-selector').style.display = 'none';
-    
-    // Carica dettagli
     try {
         const details = await fetchTMDB(`${mediaType}/${item.id}`);
         
@@ -54,15 +49,25 @@ async function openMobilePlayer(item) {
             overviewDiv.textContent = details.overview || "Nessuna descrizione disponibile.";
         }
         
-        // Se è serie TV, carica stagioni ma NON avviare la riproduzione automatica
         if (mediaType === 'tv') {
             document.getElementById('mobile-episode-selector').style.display = 'block';
             await loadTVSeasonsMobile(item.id);
             
-            // NON avviare la riproduzione automaticamente
-            // L'utente deve selezionare un episodio
+            // AVVIO AUTOMATICO: Se non ci sono stagioni/episodi selezionati, riproduci S1E1
+            setTimeout(async () => {
+                const seasonSelect = document.getElementById('mobile-season-select');
+                if (seasonSelect && seasonSelect.value) {
+                    const seasonNum = parseInt(seasonSelect.value);
+                    if (seasonNum > 0) {
+                        playItemMobile(item.id, mediaType, seasonNum, 1);
+                    } else {
+                        // Se la stagione è 0, usa la stagione 1
+                        playItemMobile(item.id, mediaType, 1, 1);
+                    }
+                }
+            }, 1000);
+            
         } else {
-            // Per i film, avvia immediatamente la riproduzione
             setTimeout(() => playItemMobile(item.id, mediaType), 500);
         }
         
@@ -650,7 +655,6 @@ function changeMobileSubtitle(subtitleId) {
 // ============ GESTIONE STAGIONI ED EPISODI ============
 async function loadTVSeasonsMobile(tmdbId) {
     try {
-        // Ottieni dettagli della serie
         const details = await fetchTMDB(`tv/${tmdbId}`);
         currentMobileSeasons = details.seasons || [];
         
@@ -659,24 +663,27 @@ async function loadTVSeasonsMobile(tmdbId) {
         
         if (!seasonSelect || !episodesList) return;
         
-        // Pulisci select
         seasonSelect.innerHTML = '';
         
-        // Aggiungi stagioni al select
-        currentMobileSeasons.forEach((season, index) => {
+        // FILTRA: Rimuovi le stagioni con season_number = 0
+        const validSeasons = currentMobileSeasons.filter(season => season.season_number > 0);
+        
+        validSeasons.forEach((season, index) => {
             const option = document.createElement('option');
             option.value = season.season_number;
             option.textContent = `Stagione ${season.season_number} (${season.episode_count} episodi)`;
             seasonSelect.appendChild(option);
         });
         
-        // Carica episodi della prima stagione
-        if (currentMobileSeasons.length > 0) {
-            const firstSeasonNumber = currentMobileSeasons[0].season_number;
+        if (validSeasons.length > 0) {
+            const firstSeasonNumber = validSeasons[0].season_number;
             await loadSeasonEpisodesMobile(tmdbId, firstSeasonNumber);
+        } else {
+            // Se non ci sono stagioni valide, prova con la stagione 1
+            console.warn("Nessuna stagione valida trovata, provo con la stagione 1");
+            await loadSeasonEpisodesMobile(tmdbId, 1);
         }
         
-        // Aggiungi evento change al select delle stagioni
         seasonSelect.onchange = function() {
             const seasonNumber = parseInt(this.value);
             loadSeasonEpisodesMobile(tmdbId, seasonNumber);
@@ -692,18 +699,16 @@ async function loadSeasonEpisodesMobile(tmdbId, seasonNumber) {
         const episodesList = document.getElementById('mobile-episodes-list');
         if (!episodesList) return;
         
-        // Mostra loading
         episodesList.innerHTML = '<div class="mobile-episode-item">Caricamento episodi...</div>';
         
-        // Ottieni episodi della stagione
         const seasonData = await fetchTMDB(`tv/${tmdbId}/season/${seasonNumber}`);
         const episodes = seasonData.episodes || [];
-        
-        // Pulisci lista
         episodesList.innerHTML = '';
         
-        // Aggiungi ogni episodio alla lista
-        episodes.forEach(episode => {
+        // FILTRA: Rimuovi episodi con episode_number = 0
+        const validEpisodes = episodes.filter(episode => episode.episode_number > 0);
+        
+        validEpisodes.forEach(episode => {
             const episodeItem = document.createElement('div');
             episodeItem.className = 'mobile-episode-item';
             episodeItem.innerHTML = `
@@ -728,8 +733,7 @@ async function loadSeasonEpisodesMobile(tmdbId, seasonNumber) {
             episodesList.appendChild(episodeItem);
         });
         
-        // Se non ci sono episodi
-        if (episodes.length === 0) {
+        if (validEpisodes.length === 0) {
             episodesList.innerHTML = '<div class="mobile-episode-item">Nessun episodio disponibile</div>';
         }
         
