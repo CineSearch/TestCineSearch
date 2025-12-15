@@ -368,18 +368,20 @@
 </section>
 
         
-        <!-- Risultati Ricerca -->
-        <section id="mobile-results" class="mobile-section">
-            <div class="mobile-page-header">
-                <button class="mobile-back-btn" onclick="showHomeMobile()">
-                    <i class="fas fa-arrow-left"></i>
-                </button>
-                <h2>Risultati Ricerca</h2>
-            </div>
-            
-            <div class="mobile-grid" id="mobile-results-grid"></div>
-        </section>
-        <section id="mobile-category-results" class="mobile-section">
+<!-- Risultati Ricerca -->
+<section id="mobile-results" class="mobile-section">
+    <div class="mobile-page-header">
+        <button class="mobile-back-btn" onclick="showHomeMobile()">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>Risultati Ricerca</h2>
+    </div>
+    
+    <div class="mobile-grid" id="mobile-results-grid"></div>
+</section>
+
+<!-- Risultati Categoria -->
+<section id="mobile-category-results" class="mobile-section">
     <div class="mobile-page-header">
         <button class="mobile-back-btn" onclick="showCategoriesMobile()">
             <i class="fas fa-arrow-left"></i>
@@ -389,7 +391,25 @@
     
     <div class="mobile-grid" id="mobile-category-grid"></div>
 </section>
-    </main>
+
+<!-- Continua Visione Mobile -->
+<section id="mobile-continua" class="mobile-section">
+    <div class="mobile-page-header">
+        <button class="mobile-back-btn" onclick="showHomeMobile()">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2>Continua a Guardare</h2>
+    </div>
+    
+    <div class="mobile-grid" id="mobile-continua-grid">
+        <div class="empty-state" id="mobile-empty-continua">
+            <i class="fas fa-history"></i>
+            <p>Nessuna visione in corso</p>
+            <p>I contenuti che guardi appariranno qui</p>
+        </div>
+    </div>
+</section>
+
     
     <!-- Bottom Navigation -->
     <nav class="mobile-bottom-nav">
@@ -427,6 +447,7 @@
 <script src="mobile-storage.js"></script>
 <script src="mobile-content.js"></script>
 <script src="mobile-player.js"></script>
+<script src="mobile-continua.js"></script>
 <script src="mobile-main.js"></script>
 </body>
 </html>

@@ -982,6 +982,13 @@ function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null
             clearInterval(saveInterval);
         }
     });
+
+    videoElement.addEventListener('timeupdate', () => {
+    // Aggiorna la sezione "Continua Visione" se è visibile
+    if (currentMobileSection === 'continua') {
+        updateContinuaVisione();
+    }
+});
 }
 
 function closePlayerMobile() {
