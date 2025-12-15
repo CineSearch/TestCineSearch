@@ -67,4 +67,3 @@ window.changeMobileAudio = changeMobileAudio;
 window.changeMobileSubtitle = changeMobileSubtitle;
 window.playContinueItem = playContinueItem;
 window.removeContinueItem = removeContinueItem;
-window.handlePlayClick = handlePlayClick;
