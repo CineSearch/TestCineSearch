@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-<script>
+ <script>
 function getDeviceType() {
     const ua = navigator.userAgent.toLowerCase();
 
@@ -37,11 +36,12 @@ const path = window.location.pathname;
 if (device === "ios" && !path.includes("/mobileIOS/")) {
     window.location.href = "mobileIOS/indexIOS.html";
 }
-else if (device === "android" && !path.includes("/mobile/")) {
+else if ((device === "android" || device === "tv") && !path.includes("/mobileAndroid/")) {
     window.location.href = "mobileAndroid/index.html";
 }
-// PC e TV → index.html (nessuna azione)
+// Desktop → index.html (nessuna azione)
 </script>
+
 <script>
   const isTV = /TV|SmartTV|WebOS|Tizen|Android TV|GoogleTV/i.test(navigator.userAgent);
 
