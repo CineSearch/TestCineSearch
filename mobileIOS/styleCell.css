@@ -15,14 +15,6 @@ body {
     padding-bottom: 70px; /* Spazio per la bottom nav */
 }
 
-.carousel-wrapper {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
-  padding: 0 60px !important; /* Spazio per le frecce */
-}
-
 /* Header Mobile */
 #mobile-header {
     position: fixed;
@@ -727,8 +719,8 @@ body {
         cursor: pointer;
     }
 /* Video.js Mobile Styling */
-.vjs-theme-vixflix {
-    --vjs-theme-vixflix--primary: #e50914;
+.vjs-theme-cinesearch {
+    --vjs-theme-cinesearch--primary: #e50914;
 }
 
 .video-js {

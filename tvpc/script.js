@@ -410,7 +410,6 @@ function goBackToCategories() {
     history.pushState({ section: 'categories' }, '', '#categories');
 }
 
-// Aggiungi questa funzione per gestire il tasto "Indietro" del browser
 function handlePopState(event) {
     console.log('Popstate triggered', event.state);
     
@@ -449,6 +448,10 @@ function handlePopState(event) {
                 break;
             case 'results':
                 document.getElementById("results").style.display = "block";
+                break;
+            case 'player':
+                // Se viene richiamato il player dall'history, torna alla home
+                goBackToHome();
                 break;
         }
         

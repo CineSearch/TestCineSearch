@@ -42,7 +42,13 @@ else if (device === "android" && !path.includes("/mobile/")) {
 }
 // PC e TV → index.html (nessuna azione)
 </script>
+<script>
+  const isTV = /TV|SmartTV|WebOS|Tizen|Android TV|GoogleTV/i.test(navigator.userAgent);
 
+  if (isTV) {
+    document.body.classList.add('tv');
+  }
+</script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
@@ -58,7 +64,7 @@ else if (device === "android" && !path.includes("/mobile/")) {
     />
     <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.js"></script>
     
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="tvpc/style.css">
   </head>
   <body>
     <header id="header">
@@ -88,7 +94,7 @@ else if (device === "android" && !path.includes("/mobile/")) {
       <div id="home">
         <section class="hero">
           <div class="hero-content">
-            <h1>Benvenuto su CineSearch TV</h1>
+            <h1>Benvenuto su CineSearch</h1>
             <p>La tua piattaforma per film e serie TV</p>
             
             <div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
@@ -221,7 +227,7 @@ else if (device === "android" && !path.includes("/mobile/")) {
 
             <video
               id="player-video"
-              class="video-js vjs-theme-vixflix vjs-big-play-centered"
+              class="video-js vjs-theme-cinesearch vjs-big-play-centered"
               controls
               preload="auto"
               playsinline
@@ -368,18 +374,18 @@ else if (device === "android" && !path.includes("/mobile/")) {
     Aggiungi contenuti ai preferiti per vederli qui
   </div>
 </section>
-<script src="script.js?v=00"></script>
-<script src="api.js?v=00"></script>
-<script src="cors.js?v=00"></script>
-<script src="preferiti.js?v=00"></script>
-<script src="continua-visione.js?v=00"></script>
-<script src="card.js?v=00"></script>
-<script src="categorie.js?v=00"></script>
-<script src="film-serie.js?v=00"></script>
-<script src="ricerca.js?v=00"></script>
-<script src="player.js?v=00"></script>
+<script src="tvpc/script.js?v=00"></script>
+<script src="tvpc/api.js?v=00"></script>
+<script src="tvpc/cors.js?v=00"></script>
+<script src="tvpc/preferiti.js?v=00"></script>
+<script src="tvpc/continua-visione.js?v=00"></script>
+<script src="tvpc/card.js?v=00"></script>
+<script src="tvpc/categorie.js?v=00"></script>
+<script src="tvpc/film-serie.js?v=00"></script>
+<script src="tvpc/ricerca.js?v=00"></script>
+<script src="tvpc/player.js?v=00"></script>
 <footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.9rem; border-top: 1px solid #333; margin-top: 3rem;">
-  <p>© 2025 Copyright AIMODS | Forked by VixFlix</p>
+  <p>© 2025 Copyright AIMODS | Forked by cinesearch</p>
 </footer>
   </body>
 </html>
