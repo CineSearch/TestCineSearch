@@ -938,31 +938,68 @@ function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null
 });
 }
 
+let qualityExtractionTimeout = null;
+let audioExtractionTimeout = null;
+let subtitleExtractionTimeout = null;
+
+// Modifica closePlayerMobile()
 function closePlayerMobile() {
-    // console.log("Chiusura player mobile...");
+    console.log("📱 Chiusura player mobile - Pulizia completa...");
     
-    if (mobilePlayer) {
-        mobilePlayer.dispose();
-        mobilePlayer = null;
+    // 1. Ferma tutti i timeout in sospeso
+    if (qualityExtractionTimeout) {
+        clearTimeout(qualityExtractionTimeout);
+        qualityExtractionTimeout = null;
+    }
+    if (audioExtractionTimeout) {
+        clearTimeout(audioExtractionTimeout);
+        audioExtractionTimeout = null;
+    }
+    if (subtitleExtractionTimeout) {
+        clearTimeout(subtitleExtractionTimeout);
+        subtitleExtractionTimeout = null;
     }
     
+    // 2. Ferma la riproduzione
+    if (mobilePlayer) {
+        try {
+            // Rimuovi tutti gli event listener
+            mobilePlayer.off('error');
+            mobilePlayer.off('loadeddata');
+            mobilePlayer.off('loadedmetadata');
+            mobilePlayer.off('ready');
+            
+            // Pulisci
+            mobilePlayer.pause();
+            mobilePlayer.currentTime(0);
+            mobilePlayer.src('');
+            
+            // Distruggi immediatamente
+            mobilePlayer.dispose();
+            mobilePlayer = null;
+        } catch (error) {
+            console.error("Errore chiusura player:", error);
+        }
+    }
+    
+    // 3. Pulisci variabili
     currentMobileItem = null;
     currentMobileSeasons = [];
+    currentStreamData = null;
+    availableAudioTracks = [];
+    availableSubtitles = [];
+    availableQualities = [];
     
+    // 4. Pulisci hook CORS
     removeVideoJsXhrHook();
     
-    // Pulisci elemento video
-    const videoElement = document.getElementById('mobile-player-video');
-    if (videoElement) {
-        videoElement.remove();
-    }
+    // 5. Nascondi controlli aggiuntivi
+    hideAdditionalControls();
     
+    // 6. Mostra home
     showHomeMobile();
     
-    // Aggiorna "Continua visione"
-    setTimeout(() => {
-        updateMobileFavCount();
-    }, 300);
+    console.log("✅ Player chiuso correttamente");
 }
 
 // ============ VIDEO.JS CORS HOOK ============
@@ -1004,8 +1041,6 @@ const xhrRequestHook = (options) => {
         return options;
     }
     
-    // CASO 5: Altri URL - applica proxy
-    // console.log('📱 MOBILE - Altro URL, applico proxy');
     options.uri = applyCorsProxy(originalUri);
     return options;
 };
