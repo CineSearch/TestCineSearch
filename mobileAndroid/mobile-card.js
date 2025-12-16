@@ -4,6 +4,9 @@ function createMobileCard(item) {
     const card = document.createElement('div');
     card.className = 'mobile-card';
     
+    // AGGIUNGI QUESTA LINEA PER NAVIGAZIONE TV
+    card.setAttribute('tabindex', '0');
+    
     const imageUrl = item.poster_path 
         ? `https://image.tmdb.org/t/p/w342${item.poster_path}`
         : 'https://via.placeholder.com/342x513?text=No+Image';
