@@ -8,6 +8,7 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
+let isClosingMobilePlayer = false;
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -93,15 +94,17 @@ function showAdditionalControls() {
 
 async function playItemMobile(id, type, season = null, episode = null) {
     console.log(`Riproduzione ${type} ${id}`, season ? `S${season}E${episode}` : '');
-    
+    if (isClosingMobilePlayer) {
+    console.warn('⏳ Player in chiusura, riproduzione annullata');
+    return;
+}
     showMobileLoading(true, "Preparazione video...");
     
     try {
         // Distruggi player precedente
-        if (mobilePlayer) {
-            mobilePlayer.dispose();
-            mobilePlayer = null;
-        }
+if (videojs.getPlayer('mobile-player-video')) {
+    videojs.getPlayer('mobile-player-video').dispose();
+}
         
         const videoContainer = document.querySelector('.mobile-video-container');
         let videoElement = document.getElementById('mobile-player-video');
@@ -169,17 +172,12 @@ async function playItemMobile(id, type, season = null, episode = null) {
             src: proxiedM3u8Url,
             type: 'application/x-mpegURL',
         });
-            initQualitySelectorPlugin();
+
         mobilePlayer.ready(() => {
             showMobileLoading(false);
             
             console.log('✅ Player ready');
-                        // Registra funzione di cleanup
-            const cleanupReady = () => {
-                mobilePlayer.off('ready', cleanupReady);
-            };
-            cleanupFunctions.push(cleanupReady.bind(this));
-            
+            initQualitySelectorPlugin();
             // Estrai qualità disponibili
 
             setTimeout(() => {
@@ -376,6 +374,7 @@ function extractAvailableQualities() {
                 resolve(availableQualities);
                 
             } catch (error) {
+                console.error(`Errore tentativo ${attempts}:`, error);
                 if (attempts < maxAttempts) {
                     setTimeout(checkVhs, 500);
                 } else {
@@ -811,7 +810,6 @@ function showMobileSubtitleSelector() {
     }
 }
 
-// ... RESTANTE CODICE (getDirectStreamMobile, trackVideoProgressMobile, closePlayerMobile, ecc.)
 // Mantieni tutto il codice esistente qui sotto...
 async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = null) {
     try {
@@ -941,80 +939,31 @@ function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null
     }
 });
 }
-let cleanupFunctions = [];
-function closePlayerMobile() {
-    // console.log("Chiusura player mobile...");
-    cleanupMobilePlayer();
 
-    if (mobilePlayer) {
-        mobilePlayer.dispose();
-        mobilePlayer = null;
-    }
-    
-    currentMobileItem = null;
-    currentMobileSeasons = [];
-    
-    removeVideoJsXhrHook();
-    
-    // Pulisci elemento video
-    const videoElement = document.getElementById('mobile-player-video');
-    if (videoElement) {
-        videoElement.remove();
-    }
-    
-    showHomeMobile();
-    
-    // Aggiorna "Continua visione"
-    setTimeout(() => {
-        updateMobileFavCount();
-    }, 300);
+function closePlayerMobile() {
+    isClosingMobilePlayer = true;
+
+if (videojs.getPlayer('mobile-player-video')) {
+    videojs.getPlayer('mobile-player-video').dispose();
 }
 
-function cleanupMobilePlayer() {
-    console.log("🧹 PULIZIA COMPLETA PLAYER MOBILE");
-    
-    // Rimuovi tutti gli event listener
-    cleanupFunctions.forEach(fn => fn());
-    cleanupFunctions = [];
-    
-    // Distruggi player Video.js
-    if (mobilePlayer) {
-        try {
-            mobilePlayer.dispose();
-            mobilePlayer = null;
-        } catch (e) {
-            console.error("Errore durante dispose player:", e);
-        }
-    }
-    
-    // Pulisci elemento video completamente
-    const videoContainer = document.querySelector('.mobile-video-container');
-    if (videoContainer) {
-        videoContainer.innerHTML = '';
-        
-        // Crea nuovo elemento video
-        const videoElement = document.createElement('video');
-        videoElement.id = 'mobile-player-video';
-        videoElement.className = 'video-js vjs-theme-cinesearch';
-        videoElement.setAttribute('controls', '');
-        videoElement.setAttribute('preload', 'auto');
-        videoElement.setAttribute('playsinline', '');
-        videoElement.setAttribute('crossorigin', 'anonymous');
-        videoElement.style.width = '100%';
-        videoElement.style.height = '100%';
-        
-        videoContainer.appendChild(videoElement);
-    }
-    
-    // Resetta tutte le variabili globali
-    currentStreamData = null;
-    availableAudioTracks = [];
-    availableSubtitles = [];
-    availableQualities = [];
-    playerInitialized = false;
-    
-    // Rimuovi hook XHR
     removeVideoJsXhrHook();
+
+    const videoElement = document.getElementById('mobile-player-video');
+    if (videoElement) {
+        videoElement.src = '';
+        videoElement.load();
+        videoElement.remove();
+    }
+
+    currentMobileItem = null;
+    currentMobileSeasons = [];
+
+    setTimeout(() => {
+        isClosingMobilePlayer = false;
+    }, 500);
+
+    showHomeMobile();
 }
 
 // ============ VIDEO.JS CORS HOOK ============
