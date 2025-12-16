@@ -75,6 +75,16 @@ function showMobileSection(sectionId) {
     if (sidebar) sidebar.classList.remove('active');
     
     updateBottomNav(sectionId.replace('mobile-', ''));
+    
+    // AUTO-FOCUS PER TV
+    setTimeout(() => {
+        if (document.body.classList.contains('android-tv')) {
+            const firstFocusable = section.querySelector('[tabindex="0"]');
+            if (firstFocusable) {
+                firstFocusable.focus();
+            }
+        }
+    }, 100);
 }
 
 function updateBottomNav(activeItem) {
