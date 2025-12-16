@@ -3,19 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<script>
-if (!window.location.pathname.includes("/mobileAndroid/")) {
+    <script>
     window.location.href = "mobileAndroid/index.html";
-}
-</script>
-
-<script>
-  const isTV = /TV|SmartTV|WebOS|Tizen|Android TV|GoogleTV/i.test(navigator.userAgent);
-
-  if (isTV) {
-    document.body.classList.add('tv');
-  }
-</script>
+    </script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
