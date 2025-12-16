@@ -8,7 +8,6 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
-let isClosingMobilePlayer = false;
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -94,17 +93,15 @@ function showAdditionalControls() {
 
 async function playItemMobile(id, type, season = null, episode = null) {
     console.log(`Riproduzione ${type} ${id}`, season ? `S${season}E${episode}` : '');
-    if (isClosingMobilePlayer) {
-    console.warn('⏳ Player in chiusura, riproduzione annullata');
-    return;
-}
+    
     showMobileLoading(true, "Preparazione video...");
     
     try {
         // Distruggi player precedente
-if (videojs.getPlayer('mobile-player-video')) {
-    videojs.getPlayer('mobile-player-video').dispose();
-}
+        if (mobilePlayer) {
+            mobilePlayer.dispose();
+            mobilePlayer = null;
+        }
         
         const videoContainer = document.querySelector('.mobile-video-container');
         let videoElement = document.getElementById('mobile-player-video');
@@ -172,12 +169,12 @@ if (videojs.getPlayer('mobile-player-video')) {
             src: proxiedM3u8Url,
             type: 'application/x-mpegURL',
         });
-
+            initQualitySelectorPlugin();
         mobilePlayer.ready(() => {
             showMobileLoading(false);
             
             console.log('✅ Player ready');
-            initQualitySelectorPlugin();
+            
             // Estrai qualità disponibili
 
             setTimeout(() => {
@@ -810,6 +807,7 @@ function showMobileSubtitleSelector() {
     }
 }
 
+// ... RESTANTE CODICE (getDirectStreamMobile, trackVideoProgressMobile, closePlayerMobile, ecc.)
 // Mantieni tutto il codice esistente qui sotto...
 async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = null) {
     try {
@@ -941,29 +939,30 @@ function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null
 }
 
 function closePlayerMobile() {
-    isClosingMobilePlayer = true;
-
-if (videojs.getPlayer('mobile-player-video')) {
-    videojs.getPlayer('mobile-player-video').dispose();
-}
-
-    removeVideoJsXhrHook();
-
-    const videoElement = document.getElementById('mobile-player-video');
-    if (videoElement) {
-        videoElement.src = '';
-        videoElement.load();
-        videoElement.remove();
+    // console.log("Chiusura player mobile...");
+    
+    if (mobilePlayer) {
+        mobilePlayer.dispose();
+        mobilePlayer = null;
     }
-
+    
     currentMobileItem = null;
     currentMobileSeasons = [];
-
-    setTimeout(() => {
-        isClosingMobilePlayer = false;
-    }, 500);
-
+    
+    removeVideoJsXhrHook();
+    
+    // Pulisci elemento video
+    const videoElement = document.getElementById('mobile-player-video');
+    if (videoElement) {
+        videoElement.remove();
+    }
+    
     showHomeMobile();
+    
+    // Aggiorna "Continua visione"
+    setTimeout(() => {
+        updateMobileFavCount();
+    }, 300);
 }
 
 // ============ VIDEO.JS CORS HOOK ============

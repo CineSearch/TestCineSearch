@@ -78,7 +78,7 @@ async function loadContinuaMobile() {
             }
         }
         
-        // Ordina per progresso (piÃ¹ recente/piÃ¹ avanzato)
+        // Ordina per progresso (più recente/più avanzato)
         continueItems.sort((a, b) => b.progress - a.progress);
         
         // Crea le card per ogni elemento
