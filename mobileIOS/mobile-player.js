@@ -174,6 +174,11 @@ async function playItemMobile(id, type, season = null, episode = null) {
             showMobileLoading(false);
             
             console.log('✅ Player ready');
+                        // Registra funzione di cleanup
+            const cleanupReady = () => {
+                mobilePlayer.off('ready', cleanupReady);
+            };
+            cleanupFunctions.push(cleanupReady.bind(this));
             
             // Estrai qualità disponibili
 
@@ -371,7 +376,6 @@ function extractAvailableQualities() {
                 resolve(availableQualities);
                 
             } catch (error) {
-                console.error(`Errore tentativo ${attempts}:`, error);
                 if (attempts < maxAttempts) {
                     setTimeout(checkVhs, 500);
                 } else {
@@ -937,69 +941,80 @@ function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null
     }
 });
 }
-
-let qualityExtractionTimeout = null;
-let audioExtractionTimeout = null;
-let subtitleExtractionTimeout = null;
-
-// Modifica closePlayerMobile()
+let cleanupFunctions = [];
 function closePlayerMobile() {
-    console.log("📱 Chiusura player mobile - Pulizia completa...");
-    
-    // 1. Ferma tutti i timeout in sospeso
-    if (qualityExtractionTimeout) {
-        clearTimeout(qualityExtractionTimeout);
-        qualityExtractionTimeout = null;
-    }
-    if (audioExtractionTimeout) {
-        clearTimeout(audioExtractionTimeout);
-        audioExtractionTimeout = null;
-    }
-    if (subtitleExtractionTimeout) {
-        clearTimeout(subtitleExtractionTimeout);
-        subtitleExtractionTimeout = null;
+    // console.log("Chiusura player mobile...");
+    cleanupMobilePlayer();
+
+    if (mobilePlayer) {
+        mobilePlayer.dispose();
+        mobilePlayer = null;
     }
     
-    // 2. Ferma la riproduzione
+    currentMobileItem = null;
+    currentMobileSeasons = [];
+    
+    removeVideoJsXhrHook();
+    
+    // Pulisci elemento video
+    const videoElement = document.getElementById('mobile-player-video');
+    if (videoElement) {
+        videoElement.remove();
+    }
+    
+    showHomeMobile();
+    
+    // Aggiorna "Continua visione"
+    setTimeout(() => {
+        updateMobileFavCount();
+    }, 300);
+}
+
+function cleanupMobilePlayer() {
+    console.log("🧹 PULIZIA COMPLETA PLAYER MOBILE");
+    
+    // Rimuovi tutti gli event listener
+    cleanupFunctions.forEach(fn => fn());
+    cleanupFunctions = [];
+    
+    // Distruggi player Video.js
     if (mobilePlayer) {
         try {
-            // Rimuovi tutti gli event listener
-            mobilePlayer.off('error');
-            mobilePlayer.off('loadeddata');
-            mobilePlayer.off('loadedmetadata');
-            mobilePlayer.off('ready');
-            
-            // Pulisci
-            mobilePlayer.pause();
-            mobilePlayer.currentTime(0);
-            mobilePlayer.src('');
-            
-            // Distruggi immediatamente
             mobilePlayer.dispose();
             mobilePlayer = null;
-        } catch (error) {
-            console.error("Errore chiusura player:", error);
+        } catch (e) {
+            console.error("Errore durante dispose player:", e);
         }
     }
     
-    // 3. Pulisci variabili
-    currentMobileItem = null;
-    currentMobileSeasons = [];
+    // Pulisci elemento video completamente
+    const videoContainer = document.querySelector('.mobile-video-container');
+    if (videoContainer) {
+        videoContainer.innerHTML = '';
+        
+        // Crea nuovo elemento video
+        const videoElement = document.createElement('video');
+        videoElement.id = 'mobile-player-video';
+        videoElement.className = 'video-js vjs-theme-cinesearch';
+        videoElement.setAttribute('controls', '');
+        videoElement.setAttribute('preload', 'auto');
+        videoElement.setAttribute('playsinline', '');
+        videoElement.setAttribute('crossorigin', 'anonymous');
+        videoElement.style.width = '100%';
+        videoElement.style.height = '100%';
+        
+        videoContainer.appendChild(videoElement);
+    }
+    
+    // Resetta tutte le variabili globali
     currentStreamData = null;
     availableAudioTracks = [];
     availableSubtitles = [];
     availableQualities = [];
+    playerInitialized = false;
     
-    // 4. Pulisci hook CORS
+    // Rimuovi hook XHR
     removeVideoJsXhrHook();
-    
-    // 5. Nascondi controlli aggiuntivi
-    hideAdditionalControls();
-    
-    // 6. Mostra home
-    showHomeMobile();
-    
-    console.log("✅ Player chiuso correttamente");
 }
 
 // ============ VIDEO.JS CORS HOOK ============
@@ -1041,6 +1056,8 @@ const xhrRequestHook = (options) => {
         return options;
     }
     
+    // CASO 5: Altri URL - applica proxy
+    // console.log('📱 MOBILE - Altro URL, applico proxy');
     options.uri = applyCorsProxy(originalUri);
     return options;
 };
