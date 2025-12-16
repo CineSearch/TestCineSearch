@@ -5,6 +5,14 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+.carousel-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  padding: 0 60px !important; /* Spazio per le frecce */
+}
+
 body {
     background: #0a0a0a;
     color: #fff;
