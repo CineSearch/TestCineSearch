@@ -1404,3 +1404,149 @@ body {
     cursor: pointer;
     font-weight: normal;
 }
+/* ============ ACCESSIBILITÀ TV (D-PAD NAVIGATION) ============ */
+
+/* Rendi tutte le card focusable */
+.mobile-card:focus,
+.mobile-category-card:focus,
+.mobile-nav-btn:focus,
+.mobile-episode-item:focus,
+.mobile-control-btn:focus {
+    outline: 3px solid #2a09e5 !important;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(42, 9, 229, 0.5);
+    z-index: 10;
+}
+
+/* Migliora la visibilità del focus per TV */
+.mobile-card:focus {
+    transform: scale(1.05);
+    border-color: #2a09e5;
+}
+
+/* Stile per pulsanti quando hanno focus */
+.mobile-card-btn:focus,
+.filter-btn:focus,
+.reset-btn:focus,
+.mobile-page-btn:focus {
+    outline: 2px solid #e50914 !important;
+    outline-offset: 2px;
+}
+
+/* Navigazione bottom nav */
+.bottom-nav-item:focus {
+    background: rgba(42, 9, 229, 0.3) !important;
+    color: #fff !important;
+}
+
+/* Menu sidebar */
+.nav-item:focus {
+    background: rgba(42, 9, 229, 0.3) !important;
+    transform: translateX(5px);
+}
+
+/* Selettori */
+#mobile-cors-select:focus,
+.mobile-control-select:focus,
+.season-selector-mobile select:focus,
+.mobile-filter-input:focus {
+    border-color: #2a09e5 !important;
+    box-shadow: 0 0 0 2px rgba(42, 9, 229, 0.5) !important;
+}
+
+/* ============ TV-SPECIFIC STYLES ============ */
+@media (min-width: 768px) {
+    /* Aumenta le dimensioni per TV viewing */
+    .mobile-card {
+        min-width: 160px;
+    }
+    
+    /* Migliore spaziatura per navigazione D-pad */
+    .mobile-grid {
+        gap: 20px;
+    }
+    
+    .mobile-categories-grid {
+        gap: 20px;
+    }
+}
+
+/* ============ INDICATORE DI FOCUS VISIBILE ============ */
+.mobile-card[tabindex="0"]:focus {
+    position: relative;
+}
+
+.mobile-card[tabindex="0"]:focus::after {
+    content: '▶';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: #e50914;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    z-index: 2;
+}
+
+/* ============ GRID NAVIGATION HELPERS ============ */
+.tv-navigation-hint {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    text-align: center;
+    z-index: 1000;
+    display: none;
+    border: 1px solid #2a09e5;
+}
+
+.android-tv .tv-navigation-hint {
+    display: block;
+}
+
+/* ============ SCROLLING VISIBILE PER TV ============ */
+.android-tv .mobile-carousel-container {
+    scrollbar-width: auto !important;
+}
+
+.android-tv .mobile-carousel-container::-webkit-scrollbar {
+    display: block !important;
+    height: 8px;
+}
+
+.android-tv .mobile-carousel-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.android-tv .mobile-carousel-container::-webkit-scrollbar-thumb {
+    background: #2a09e5;
+    border-radius: 4px;
+}
+
+/* ============ BOTTONI PIÙ GRANDI PER TV ============ */
+.android-tv .mobile-card-btn {
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.android-tv .mobile-control-btn {
+    width: 48px;
+    height: 48px;
+}
+
+.android-tv .mobile-nav-btn {
+    padding: 20px 15px;
+}
