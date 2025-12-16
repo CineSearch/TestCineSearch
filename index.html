@@ -3,43 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <script>
-function getDeviceType() {
-    const ua = navigator.userAgent.toLowerCase();
-
-    const isTV =
-        ua.includes("smarttv") ||
-        ua.includes("appletv") ||
-        ua.includes("googletv") ||
-        ua.includes("android tv") ||
-        ua.includes("fire tv") ||
-        ua.includes("aft") ||
-        /android.*(tv|set-top|box)/i.test(ua);
-
-    const isIOS =
-        ua.includes("iphone") ||
-        ua.includes("ipad") ||
-        ua.includes("ipod");
-
-    const isAndroid =
-        ua.includes("android") && !isTV;
-
-    if (isTV) return "tv";
-    if (isIOS) return "ios";
-    if (isAndroid) return "android";
-    return "desktop";
-}
-
-const device = getDeviceType();
-const path = window.location.pathname;
-
-if (device === "ios" && !path.includes("/mobileIOS/")) {
-    window.location.href = "mobileIOS/indexIOS.html";
-}
-else if ((device === "android" || device === "tv") && !path.includes("/mobileAndroid/")) {
+<script>
+if (!window.location.pathname.includes("/mobileAndroid/")) {
     window.location.href = "mobileAndroid/index.html";
 }
-// Desktop → index.html (nessuna azione)
 </script>
 
 <script>
