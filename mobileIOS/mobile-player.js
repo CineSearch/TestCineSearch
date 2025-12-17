@@ -12,7 +12,7 @@ let availableQualities = [];
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
     console.log("Apertura player per:", item);
-    
+    await resetMobilePlayer();
     currentMobileItem = item;
     showMobileSection('mobile-player');
     
@@ -90,31 +90,71 @@ function showAdditionalControls() {
         controls.style.display = 'flex';
     }
 }
-
+function resetMobilePlayer() {
+    console.log("Reset completo player mobile");
+    
+    // Pulisci tutto
+    closePlayerMobile();
+    
+    // Forza un breve ritardo per permettere la pulizia
+    return new Promise(resolve => {
+        setTimeout(() => {
+            // Verifica che tutto sia pulito
+            const videoElements = document.querySelectorAll('video, .video-js, .vjs-tech');
+            videoElements.forEach(el => {
+                try {
+                    el.remove();
+                } catch (e) {
+                    console.log("Elemento già rimosso");
+                }
+            });
+            
+            // Pulisci eventuali iframe residui
+            const iframes = document.querySelectorAll('iframe');
+            iframes.forEach(iframe => {
+                iframe.remove();
+            });
+            
+            resolve();
+        }, 100);
+    });
+}
 async function playItemMobile(id, type, season = null, episode = null) {
     console.log(`Riproduzione ${type} ${id}`, season ? `S${season}E${episode}` : '');
+    
+    // Pulisci completamente prima di iniziare
+    if (mobilePlayer) {
+        try {
+            mobilePlayer.dispose();
+        } catch (e) {
+            console.log("Player già distrutto");
+        }
+        mobilePlayer = null;
+    }
     
     showMobileLoading(true, "Preparazione video...");
     
     try {
-        // Distruggi player precedente
-        if (mobilePlayer) {
-            mobilePlayer.dispose();
-            mobilePlayer = null;
+        const videoContainer = document.querySelector('.mobile-video-container');
+        
+        // Pulisci il container completamente
+        if (videoContainer) {
+            videoContainer.innerHTML = '';
         }
         
-        const videoContainer = document.querySelector('.mobile-video-container');
-        let videoElement = document.getElementById('mobile-player-video');
+        // Crea nuovo elemento video
+        const videoElement = document.createElement('video');
+        videoElement.id = 'mobile-player-video';
+        videoElement.className = 'video-js vjs-theme-cinesearch';
+        videoElement.setAttribute('controls', '');
+        videoElement.setAttribute('preload', 'auto');
+        videoElement.setAttribute('playsinline', '');
+        videoElement.setAttribute('crossorigin', 'anonymous');
+        videoElement.style.width = '100%';
+        videoElement.style.height = '100%';
         
-        if (!videoElement) {
-            videoElement = document.createElement('video');
-            videoElement.id = 'mobile-player-video';
-            videoElement.className = 'video-js vjs-theme-cinesearch';
-            videoElement.setAttribute('controls', '');
-            videoElement.setAttribute('preload', 'auto');
-            videoElement.setAttribute('playsinline', '');
-            videoElement.setAttribute('crossorigin', 'anonymous');
-            videoContainer.insertBefore(videoElement, videoContainer.firstChild);
+        if (videoContainer) {
+            videoContainer.appendChild(videoElement);
         }
         
         // Ottieni stream M3U8
@@ -125,15 +165,23 @@ async function playItemMobile(id, type, season = null, episode = null) {
             throw new Error('Impossibile ottenere lo stream');
         }
         
-        // IMPORTANTE: Applica il proxy all'M3U8 URL
+        // Applica il proxy all'M3U8 URL
         const proxiedM3u8Url = applyCorsProxy(streamData.m3u8Url);
         console.log('M3U8 con proxy:', proxiedM3u8Url);
         
-        // Configura Video.js
+        // Riapplica l'hook CORS (assicurati che sia attivo)
         setupVideoJsXhrHook();
         
-        // Inizializza il player SENZA plugin nella configurazione iniziale
-        mobilePlayer = videojs('mobile-player-video', {
+        // Inizializza il player con un ID univoco per ogni istanza
+        const playerId = 'mobile-player-video-' + Date.now();
+        videoElement.id = playerId;
+        
+        // ATTENZIONE: Assicurati che videojs sia completamente caricato
+        if (typeof videojs === 'undefined') {
+            throw new Error('Video.js non caricato');
+        }
+        
+        mobilePlayer = videojs(playerId, {
             controls: true,
             fluid: true,
             aspectRatio: "16:9",
@@ -158,33 +206,34 @@ async function playItemMobile(id, type, season = null, episode = null) {
                     'fullscreenToggle',
                 ],
             }
-            // NON aggiungere plugins qui
         });
         
-        // REGISTRA E APPLICA IL PLUGIN DOPO aver creato il player
-
-        
-        // Imposta sorgente CON proxy
+        // Imposta sorgente
         mobilePlayer.src({
             src: proxiedM3u8Url,
             type: 'application/x-mpegURL',
         });
-            initQualitySelectorPlugin();
+        
+        // Rimuovi tutti gli event listeners precedenti per evitare duplicati
+        mobilePlayer.off('ready');
+        mobilePlayer.off('error');
+        mobilePlayer.off('loadeddata');
+        mobilePlayer.off('loadedmetadata');
+        
         mobilePlayer.ready(() => {
             showMobileLoading(false);
+            console.log('✅ Player ready - Nuova istanza');
             
-            console.log('✅ Player ready');
-                        // Registra funzione di cleanup
-            const cleanupReady = () => {
-                mobilePlayer.off('ready', cleanupReady);
-            };
-            cleanupFunctions.push(cleanupReady.bind(this));
+            // Inizializza plugin qualità DOPO che il player è pronto
+            setTimeout(() => {
+                initQualitySelectorPlugin();
+            }, 100);
             
             // Estrai qualità disponibili
-
             setTimeout(() => {
                 extractAvailableQualities();
             }, 500);
+            
             // Estrai tracce audio e sottotitoli
             setTimeout(() => {
                 extractAudioTracks();
@@ -210,14 +259,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         mobilePlayer.on('error', function (e) {
             console.error('Video.js error:', mobilePlayer.error());
             showMobileError('Errore durante il caricamento del video');
-        });
-        
-        mobilePlayer.on('loadeddata', function () {
-            console.log('✅ Video data loaded');
-        });
-        
-        mobilePlayer.on('loadedmetadata', function () {
-            console.log('✅ Metadata loaded');
+            showMobileLoading(false);
         });
         
     } catch (error) {
@@ -266,7 +308,7 @@ function initQualitySelectorPlugin() {
 function extractAvailableQualities() {
     return new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 20;
+        const maxAttempts = 5;
         
         function checkVhs() {
             attempts++;
@@ -302,7 +344,6 @@ function extractAvailableQualities() {
                 const master = playlists.master;
                 
                 if (!master || !master.playlists) {
-                    console.log(`Tentativo ${attempts}: Master playlist non pronta`);
                     if (attempts < maxAttempts) {
                         setTimeout(checkVhs, 500);
                     } else {
@@ -376,6 +417,7 @@ function extractAvailableQualities() {
                 resolve(availableQualities);
                 
             } catch (error) {
+                console.error(`Errore tentativo ${attempts}:`, error);
                 if (attempts < maxAttempts) {
                     setTimeout(checkVhs, 500);
                 } else {
@@ -811,7 +853,6 @@ function showMobileSubtitleSelector() {
     }
 }
 
-// ... RESTANTE CODICE (getDirectStreamMobile, trackVideoProgressMobile, closePlayerMobile, ecc.)
 // Mantieni tutto il codice esistente qui sotto...
 async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = null) {
     try {
@@ -941,80 +982,58 @@ function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null
     }
 });
 }
-let cleanupFunctions = [];
-function closePlayerMobile() {
-    // console.log("Chiusura player mobile...");
-    cleanupMobilePlayer();
 
-    if (mobilePlayer) {
-        mobilePlayer.dispose();
-        mobilePlayer = null;
-    }
+function closePlayerMobile() {
+    console.log("Chiusura player mobile...");
     
-    currentMobileItem = null;
-    currentMobileSeasons = [];
-    
-    removeVideoJsXhrHook();
-    
-    // Pulisci elemento video
+    // Ferma la riproduzione prima
     const videoElement = document.getElementById('mobile-player-video');
     if (videoElement) {
-        videoElement.remove();
+        videoElement.pause();
+        videoElement.src = '';
+        videoElement.load();
     }
     
+    // Distruggi il player Video.js
+    if (mobilePlayer) {
+        try {
+            mobilePlayer.pause();
+            mobilePlayer.dispose();
+            mobilePlayer = null;
+        } catch (e) {
+            console.error("Errore disposizione player:", e);
+        }
+    }
+    
+    // Rimuovi completamente l'elemento video
+    const videoContainer = document.querySelector('.mobile-video-container');
+    if (videoContainer) {
+        videoContainer.innerHTML = '';
+    }
+    
+    // Resetta tutte le variabili globali
+    currentMobileItem = null;
+    currentMobileSeasons = [];
+    currentStreamData = null;
+    availableAudioTracks = [];
+    availableSubtitles = [];
+    availableQualities = [];
+    
+    // Rimuovi hook CORS
+    removeVideoJsXhrHook();
+    
+    // Mostra home
     showHomeMobile();
+    
+    // Forza garbage collection (se supportato)
+    if (window.gc) {
+        window.gc();
+    }
     
     // Aggiorna "Continua visione"
     setTimeout(() => {
         updateMobileFavCount();
     }, 300);
-}
-
-function cleanupMobilePlayer() {
-    console.log("🧹 PULIZIA COMPLETA PLAYER MOBILE");
-    
-    // Rimuovi tutti gli event listener
-    cleanupFunctions.forEach(fn => fn());
-    cleanupFunctions = [];
-    
-    // Distruggi player Video.js
-    if (mobilePlayer) {
-        try {
-            mobilePlayer.dispose();
-            mobilePlayer = null;
-        } catch (e) {
-            console.error("Errore durante dispose player:", e);
-        }
-    }
-    
-    // Pulisci elemento video completamente
-    const videoContainer = document.querySelector('.mobile-video-container');
-    if (videoContainer) {
-        videoContainer.innerHTML = '';
-        
-        // Crea nuovo elemento video
-        const videoElement = document.createElement('video');
-        videoElement.id = 'mobile-player-video';
-        videoElement.className = 'video-js vjs-theme-cinesearch';
-        videoElement.setAttribute('controls', '');
-        videoElement.setAttribute('preload', 'auto');
-        videoElement.setAttribute('playsinline', '');
-        videoElement.setAttribute('crossorigin', 'anonymous');
-        videoElement.style.width = '100%';
-        videoElement.style.height = '100%';
-        
-        videoContainer.appendChild(videoElement);
-    }
-    
-    // Resetta tutte le variabili globali
-    currentStreamData = null;
-    availableAudioTracks = [];
-    availableSubtitles = [];
-    availableQualities = [];
-    playerInitialized = false;
-    
-    // Rimuovi hook XHR
-    removeVideoJsXhrHook();
 }
 
 // ============ VIDEO.JS CORS HOOK ============
