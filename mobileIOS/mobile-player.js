@@ -8,11 +8,25 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
+function mobileDebug(message, type = 'info') {
+    const logBox = document.getElementById('mobile-debug-log');
+    if (!logBox) return;
 
+    logBox.style.display = 'block';
+
+    const line = document.createElement('div');
+    line.className = `log-${type}`;
+
+    const time = new Date().toLocaleTimeString();
+    line.textContent = `[${time}] ${message}`;
+
+    logBox.appendChild(line);
+    logBox.scrollTop = logBox.scrollHeight;
+}
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
-    console.log("Apertura player per:", item);
-    await resetMobilePlayer();
+    mobileDebug("Apertura player per:", item);
+    
     currentMobileItem = item;
     showMobileSection('mobile-player');
     
@@ -72,7 +86,7 @@ async function openMobilePlayer(item) {
         }
         
     } catch (error) {
-        console.error('Errore caricamento dettagli:', error);
+        mobileDebug('Errore caricamento dettagli:', error);
         showMobileError('Errore nel caricamento dei dettagli');
     }
 }
@@ -90,71 +104,31 @@ function showAdditionalControls() {
         controls.style.display = 'flex';
     }
 }
-function resetMobilePlayer() {
-    console.log("Reset completo player mobile");
-    
-    // Pulisci tutto
-    closePlayerMobile();
-    
-    // Forza un breve ritardo per permettere la pulizia
-    return new Promise(resolve => {
-        setTimeout(() => {
-            // Verifica che tutto sia pulito
-            const videoElements = document.querySelectorAll('video, .video-js, .vjs-tech');
-            videoElements.forEach(el => {
-                try {
-                    el.remove();
-                } catch (e) {
-                    console.log("Elemento già rimosso");
-                }
-            });
-            
-            // Pulisci eventuali iframe residui
-            const iframes = document.querySelectorAll('iframe');
-            iframes.forEach(iframe => {
-                iframe.remove();
-            });
-            
-            resolve();
-        }, 100);
-    });
-}
+
 async function playItemMobile(id, type, season = null, episode = null) {
-    console.log(`Riproduzione ${type} ${id}`, season ? `S${season}E${episode}` : '');
-    
-    // Pulisci completamente prima di iniziare
-    if (mobilePlayer) {
-        try {
-            mobilePlayer.dispose();
-        } catch (e) {
-            console.log("Player già distrutto");
-        }
-        mobilePlayer = null;
-    }
+    mobileDebug(`Riproduzione ${type} ${id}`, season ? `S${season}E${episode}` : '');
     
     showMobileLoading(true, "Preparazione video...");
     
     try {
-        const videoContainer = document.querySelector('.mobile-video-container');
-        
-        // Pulisci il container completamente
-        if (videoContainer) {
-            videoContainer.innerHTML = '';
+        // Distruggi player precedente
+        if (mobilePlayer) {
+            mobilePlayer.dispose();
+            mobilePlayer = null;
         }
         
-        // Crea nuovo elemento video
-        const videoElement = document.createElement('video');
-        videoElement.id = 'mobile-player-video';
-        videoElement.className = 'video-js vjs-theme-cinesearch';
-        videoElement.setAttribute('controls', '');
-        videoElement.setAttribute('preload', 'auto');
-        videoElement.setAttribute('playsinline', '');
-        videoElement.setAttribute('crossorigin', 'anonymous');
-        videoElement.style.width = '100%';
-        videoElement.style.height = '100%';
+        const videoContainer = document.querySelector('.mobile-video-container');
+        let videoElement = document.getElementById('mobile-player-video');
         
-        if (videoContainer) {
-            videoContainer.appendChild(videoElement);
+        if (!videoElement) {
+            videoElement = document.createElement('video');
+            videoElement.id = 'mobile-player-video';
+            videoElement.className = 'video-js vjs-theme-cinesearch';
+            videoElement.setAttribute('controls', '');
+            videoElement.setAttribute('preload', 'auto');
+            videoElement.setAttribute('playsinline', '');
+            videoElement.setAttribute('crossorigin', 'anonymous');
+            videoContainer.insertBefore(videoElement, videoContainer.firstChild);
         }
         
         // Ottieni stream M3U8
@@ -165,23 +139,15 @@ async function playItemMobile(id, type, season = null, episode = null) {
             throw new Error('Impossibile ottenere lo stream');
         }
         
-        // Applica il proxy all'M3U8 URL
+        // IMPORTANTE: Applica il proxy all'M3U8 URL
         const proxiedM3u8Url = applyCorsProxy(streamData.m3u8Url);
-        console.log('M3U8 con proxy:', proxiedM3u8Url);
+        mobileDebug('M3U8 con proxy:', proxiedM3u8Url);
         
-        // Riapplica l'hook CORS (assicurati che sia attivo)
+        // Configura Video.js
         setupVideoJsXhrHook();
         
-        // Inizializza il player con un ID univoco per ogni istanza
-        const playerId = 'mobile-player-video-' + Date.now();
-        videoElement.id = playerId;
-        
-        // ATTENZIONE: Assicurati che videojs sia completamente caricato
-        if (typeof videojs === 'undefined') {
-            throw new Error('Video.js non caricato');
-        }
-        
-        mobilePlayer = videojs(playerId, {
+        // Inizializza il player SENZA plugin nella configurazione iniziale
+        mobilePlayer = videojs('mobile-player-video', {
             controls: true,
             fluid: true,
             aspectRatio: "16:9",
@@ -206,34 +172,28 @@ async function playItemMobile(id, type, season = null, episode = null) {
                     'fullscreenToggle',
                 ],
             }
+            // NON aggiungere plugins qui
         });
         
-        // Imposta sorgente
+        // REGISTRA E APPLICA IL PLUGIN DOPO aver creato il player
+
+        
+        // Imposta sorgente CON proxy
         mobilePlayer.src({
             src: proxiedM3u8Url,
             type: 'application/x-mpegURL',
         });
-        
-        // Rimuovi tutti gli event listeners precedenti per evitare duplicati
-        mobilePlayer.off('ready');
-        mobilePlayer.off('error');
-        mobilePlayer.off('loadeddata');
-        mobilePlayer.off('loadedmetadata');
-        
+            initQualitySelectorPlugin();
         mobilePlayer.ready(() => {
             showMobileLoading(false);
-            console.log('✅ Player ready - Nuova istanza');
             
-            // Inizializza plugin qualità DOPO che il player è pronto
-            setTimeout(() => {
-                initQualitySelectorPlugin();
-            }, 100);
+            mobileDebug('✅ Player ready');
             
             // Estrai qualità disponibili
+
             setTimeout(() => {
                 extractAvailableQualities();
             }, 500);
-            
             // Estrai tracce audio e sottotitoli
             setTimeout(() => {
                 extractAudioTracks();
@@ -252,18 +212,25 @@ async function playItemMobile(id, type, season = null, episode = null) {
             
             // Riproduci automaticamente
             mobilePlayer.play().catch(e => {
-                console.log('Auto-play prevented:', e);
+                mobileDebug('Auto-play prevented:', e);
             });
         });
         
         mobilePlayer.on('error', function (e) {
-            console.error('Video.js error:', mobilePlayer.error());
+            mobileDebug('Video.js error:', mobilePlayer.error());
             showMobileError('Errore durante il caricamento del video');
-            showMobileLoading(false);
+        });
+        
+        mobilePlayer.on('loadeddata', function () {
+            mobileDebug('✅ Video data loaded');
+        });
+        
+        mobilePlayer.on('loadedmetadata', function () {
+            mobileDebug('✅ Metadata loaded');
         });
         
     } catch (error) {
-        console.error('Errore riproduzione mobile:', error);
+        mobileDebug('Errore riproduzione mobile:', error);
         showMobileLoading(false);
         showMobileError(`Impossibile riprodurre: ${error.message}`);
     }
@@ -275,7 +242,7 @@ function initQualitySelectorPlugin() {
             // Registra solo se non è già registrato
             if (typeof videojs.getPlugin('hlsQualitySelector') === 'undefined') {
                 videojs.registerPlugin('hlsQualitySelector', window.videojsHlsQualitySelector);
-                console.log('✅ Plugin qualità registrato');
+                mobileDebug('✅ Plugin qualità registrato');
             }
             
             // Applica il plugin
@@ -283,7 +250,7 @@ function initQualitySelectorPlugin() {
                 displayCurrentQuality: true,
                 placementIndex: 7
             });
-            console.log('✅ Plugin qualità inizializzato');
+            mobileDebug('✅ Plugin qualità inizializzato');
             return true;
         }
         
@@ -292,14 +259,14 @@ function initQualitySelectorPlugin() {
             mobilePlayer.hlsQualitySelector({
                 displayCurrentQuality: true
             });
-            console.log('✅ Plugin qualità già attivo');
+            mobileDebug('✅ Plugin qualità già attivo');
             return true;
         }
         
         console.warn('⚠️ Plugin qualità non trovato');
         return false;
     } catch (error) {
-        console.error('Errore inizializzazione plugin qualità:', error);
+        mobileDebug('Errore inizializzazione plugin qualità:', error);
         return false;
     }
 }
@@ -318,7 +285,7 @@ function extractAvailableQualities() {
                 const tech = mobilePlayer.tech_;
                 
                 if (!tech) {
-                    console.log(`Tentativo ${attempts}: Tech non disponibile`);
+                    mobileDebug(`Tentativo ${attempts}: Tech non disponibile`);
                     if (attempts < maxAttempts) {
                         setTimeout(checkVhs, 500);
                     } else {
@@ -329,7 +296,7 @@ function extractAvailableQualities() {
                 }
                 
                 if (!tech.vhs) {
-                    console.log(`Tentativo ${attempts}: VHS non disponibile`);
+                    mobileDebug(`Tentativo ${attempts}: VHS non disponibile`);
                     if (attempts < maxAttempts) {
                         setTimeout(checkVhs, 500);
                     } else {
@@ -354,7 +321,7 @@ function extractAvailableQualities() {
                 }
                 
                 // SUCCESSO: VHS è pronto!
-                console.log(`✅ VHS pronto dopo ${attempts} tentativi`);
+                mobileDebug(`✅ VHS pronto dopo ${attempts} tentativi`);
                 
                 availableQualities = [];
                 
@@ -392,14 +359,14 @@ function extractAvailableQualities() {
                     }
                 });
                 
-                console.log('Qualità estratte:', availableQualities);
+                mobileDebug('Qualità estratte:', availableQualities);
                 
                 // Aggiorna il dropdown
                 updateQualitySelector();
                 
                 // Se ci sono qualità, informa anche il plugin
                 if (availableQualities.length > 0) {
-                    console.log(`✅ ${availableQualities.length} qualità disponibili`);
+                    mobileDebug(`✅ ${availableQualities.length} qualità disponibili`);
                     
                     // Aggiorna il plugin se esiste
                     if (mobilePlayer.hlsQualitySelector) {
@@ -417,7 +384,7 @@ function extractAvailableQualities() {
                 resolve(availableQualities);
                 
             } catch (error) {
-                console.error(`Errore tentativo ${attempts}:`, error);
+                mobileDebug(`Errore tentativo ${attempts}:`, error);
                 if (attempts < maxAttempts) {
                     setTimeout(checkVhs, 500);
                 } else {
@@ -427,7 +394,7 @@ function extractAvailableQualities() {
         }
         
         // Inizia il controllo
-        console.log('Inizio estrazione qualità...');
+        mobileDebug('Inizio estrazione qualità...');
         setTimeout(checkVhs, 1000);
     });
 }
@@ -461,7 +428,7 @@ function updateQualitySelector() {
                 qualitySelect.value = currentQuality;
             }
         } catch (e) {
-            console.log('Impossibile ottenere qualità corrente:', e);
+            mobileDebug('Impossibile ottenere qualità corrente:', e);
         }
     }
     
@@ -482,19 +449,19 @@ function changeMobileQuality(qualityIndex) {
         if (qualityIndex === 'auto') {
             // Modalità automatica
             vhs.playlists.media();
-            console.log('Qualità impostata su: Auto');
+            mobileDebug('Qualità impostata su: Auto');
         } else {
             const index = parseInt(qualityIndex);
             if (!isNaN(index) && index >= 0 && index < availableQualities.length) {
                 vhs.playlists.media(index);
-                console.log(`Qualità cambiata a: ${availableQualities[index].label}`);
+                mobileDebug(`Qualità cambiata a: ${availableQualities[index].label}`);
             }
         }
         
         // Forza aggiornamento
         mobilePlayer.trigger('loadstart');
     } catch (error) {
-        console.error('Errore cambio qualità:', error);
+        mobileDebug('Errore cambio qualità:', error);
     }
 }
 
@@ -502,7 +469,7 @@ function changeMobileQuality(qualityIndex) {
 function extractAudioTracks() {
     try {
         if (!mobilePlayer || !mobilePlayer.audioTracks) {
-            console.log('Tracce audio non disponibili');
+            mobileDebug('Tracce audio non disponibili');
             availableAudioTracks = [];
             return;
         }
@@ -520,14 +487,14 @@ function extractAudioTracks() {
             });
         }
         
-        console.log('Tracce audio disponibili:', availableAudioTracks);
+        mobileDebug('Tracce audio disponibili:', availableAudioTracks);
         
         // Aggiorna dropdown audio
         updateAudioSelector();
         
         return availableAudioTracks;
     } catch (error) {
-        console.error('Errore estrazione tracce audio:', error);
+        mobileDebug('Errore estrazione tracce audio:', error);
         availableAudioTracks = [];
         return [];
     }
@@ -581,14 +548,14 @@ function changeMobileAudio(audioIndex) {
             // Abilita traccia selezionata
             if (audioTracks[index]) {
                 audioTracks[index].enabled = true;
-                console.log(`Audio cambiato a: ${availableAudioTracks[index].label}`);
+                mobileDebug(`Audio cambiato a: ${availableAudioTracks[index].label}`);
                 
                 // Aggiorna UI
                 updateAudioSelector();
             }
         }
     } catch (error) {
-        console.error('Errore cambio audio:', error);
+        mobileDebug('Errore cambio audio:', error);
     }
 }
 
@@ -596,7 +563,7 @@ function changeMobileAudio(audioIndex) {
 function extractSubtitles() {
     try {
         if (!mobilePlayer || !mobilePlayer.textTracks) {
-            console.log('Tracce testo non disponibili');
+            mobileDebug('Tracce testo non disponibili');
             availableSubtitles = [];
             return;
         }
@@ -624,14 +591,14 @@ function extractSubtitles() {
             }
         }
         
-        console.log('Sottotitoli disponibili:', availableSubtitles);
+        mobileDebug('Sottotitoli disponibili:', availableSubtitles);
         
         // Aggiorna dropdown sottotitoli
         updateSubtitleSelector();
         
         return availableSubtitles;
     } catch (error) {
-        console.error('Errore estrazione sottotitoli:', error);
+        mobileDebug('Errore estrazione sottotitoli:', error);
         availableSubtitles = [];
         return [];
     }
@@ -687,15 +654,15 @@ function changeMobileSubtitle(subtitleId) {
         if (id !== -1 && textTracks[id]) {
             // Attiva sottotitolo selezionato
             textTracks[id].mode = 'showing';
-            console.log(`Sottotitoli attivati: ${availableSubtitles.find(s => s.id === id)?.label}`);
+            mobileDebug(`Sottotitoli attivati: ${availableSubtitles.find(s => s.id === id)?.label}`);
         } else {
-            console.log('Sottotitoli disabilitati');
+            mobileDebug('Sottotitoli disabilitati');
         }
         
         // Aggiorna UI
         updateSubtitleSelector();
     } catch (error) {
-        console.error('Errore cambio sottotitoli:', error);
+        mobileDebug('Errore cambio sottotitoli:', error);
     }
 }
 // ============ GESTIONE STAGIONI ED EPISODI ============
@@ -736,7 +703,7 @@ async function loadTVSeasonsMobile(tmdbId) {
         };
         
     } catch (error) {
-        console.error('Errore caricamento stagioni:', error);
+        mobileDebug('Errore caricamento stagioni:', error);
     }
 }
 
@@ -784,13 +751,13 @@ async function loadSeasonEpisodesMobile(tmdbId, seasonNumber) {
         }
         
     } catch (error) {
-        console.error('Errore caricamento episodi:', error);
+        mobileDebug('Errore caricamento episodi:', error);
         showMobileError('Errore nel caricamento degli episodi');
     }
 }
 
 function playTVEpisodeMobile(tmdbId, seasonNumber, episodeNumber) {
-    console.log(`Riproduzione episodio S${seasonNumber}E${episodeNumber}`);
+    mobileDebug(`Riproduzione episodio S${seasonNumber}E${episodeNumber}`);
     
     // Aggiorna il titolo del player con dettagli episodio
     const episodeTitle = `Stagione ${seasonNumber}, Episodio ${episodeNumber}`;
@@ -861,7 +828,7 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
             vixsrcUrl += `/${season}/${episode}`;
         }
         
-        // console.log('Fetching vixsrc URL:', vixsrcUrl);
+        mobileDebug('Fetching vixsrc URL:', vixsrcUrl);
         
         const proxiedVixsrcUrl = applyCorsProxy(vixsrcUrl);
         const response = await fetch(proxiedVixsrcUrl);
@@ -897,7 +864,7 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
         }
         
         const playlistUrl = playlistUrlMatch[1];
-        // console.log('Playlist URL trovato:', playlistUrl);
+        mobileDebug('Playlist URL trovato:', playlistUrl);
         
         const canPlayFHDRegex = /window\.canPlayFHD\s+?=\s+?(\w+)/;
         const canPlayFHDMatch = html.match(canPlayFHDRegex);
@@ -912,20 +879,20 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
             '&token=' + playlistParams.token + 
             (canPlayFHD ? '&h=1' : '');
         
-        // console.log('M3U8 URL ottenuto:', m3u8Url);
+        mobileDebug('M3U8 URL ottenuto:', m3u8Url);
         
         // DEBUG: Scarica e controlla la playlist M3U8
-        // console.log('📱 MOBILE - DEBUG: Controllo contenuto playlist M3U8');
+        mobileDebug('📱 MOBILE - DEBUG: Controllo contenuto playlist M3U8');
         try {
             const m3u8Response = await fetch(applyCorsProxy(m3u8Url));
             const m3u8Content = await m3u8Response.text();
-            // console.log('📱 MOBILE - Contenuto M3U8 (prime 500 caratteri):', m3u8Content.substring(0, 500));
+            mobileDebug('📱 MOBILE - Contenuto M3U8 (prime 500 caratteri):', m3u8Content.substring(0, 500));
             
             // Cerca riferimenti a chiavi
             const keyLines = m3u8Content.split('\n').filter(line => line.includes('EXT-X-KEY'));
-            // console.log('📱 MOBILE - Linee chiave trovate:', keyLines);
+            mobileDebug('📱 MOBILE - Linee chiave trovate:', keyLines);
         } catch (e) {
-            // console.log('📱 MOBILE - Errore lettura M3U8:', e);
+            mobileDebug('📱 MOBILE - Errore lettura M3U8:', e);
         }
         
         return {
@@ -934,7 +901,7 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
         };
         
     } catch (error) {
-        console.error('Errore getDirectStreamMobile:', error);
+        mobileDebug('Errore getDirectStreamMobile:', error);
         throw error;
     }
 }
@@ -984,51 +951,25 @@ function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null
 }
 
 function closePlayerMobile() {
-    console.log("Chiusura player mobile...");
+    mobileDebug("Chiusura player mobile...");
     
-    // Ferma la riproduzione prima
-    const videoElement = document.getElementById('mobile-player-video');
-    if (videoElement) {
-        videoElement.pause();
-        videoElement.src = '';
-        videoElement.load();
-    }
-    
-    // Distruggi il player Video.js
     if (mobilePlayer) {
-        try {
-            mobilePlayer.pause();
-            mobilePlayer.dispose();
-            mobilePlayer = null;
-        } catch (e) {
-            console.error("Errore disposizione player:", e);
-        }
+        mobilePlayer.dispose();
+        mobilePlayer = null;
     }
     
-    // Rimuovi completamente l'elemento video
-    const videoContainer = document.querySelector('.mobile-video-container');
-    if (videoContainer) {
-        videoContainer.innerHTML = '';
-    }
-    
-    // Resetta tutte le variabili globali
     currentMobileItem = null;
     currentMobileSeasons = [];
-    currentStreamData = null;
-    availableAudioTracks = [];
-    availableSubtitles = [];
-    availableQualities = [];
     
-    // Rimuovi hook CORS
     removeVideoJsXhrHook();
     
-    // Mostra home
-    showHomeMobile();
-    
-    // Forza garbage collection (se supportato)
-    if (window.gc) {
-        window.gc();
+    // Pulisci elemento video
+    const videoElement = document.getElementById('mobile-player-video');
+    if (videoElement) {
+        videoElement.remove();
     }
+    
+    showHomeMobile();
     
     // Aggiorna "Continua visione"
     setTimeout(() => {
@@ -1040,43 +981,43 @@ function closePlayerMobile() {
 const xhrRequestHook = (options) => {
     const originalUri = options.uri;
     
-    // console.log('📱 MOBILE - xhrRequestHook - URL originale:', originalUri);
+    mobileDebug('📱 MOBILE - xhrRequestHook - URL originale:', originalUri);
     
     if (!originalUri) return options;
     
     // CASO 1: Se l'URL è già completamente proxyato (contiene 'corsproxy.io/?https')
     if (originalUri.includes('corsproxy.io/?https')) {
-        // console.log('📱 MOBILE - URL già completamente proxyato');
+        mobileDebug('📱 MOBILE - URL già completamente proxyato');
         return options;
     }
     
     // CASO 2: URL strano che inizia con 'https://corsproxy.io/storage/' 
     // (dovrebbe essere 'https://vixsrc.to/storage/')
     if (originalUri.startsWith('https://corsproxy.io/storage/')) {
-        // console.log('📱 MOBILE - Correzione URL chiave errato');
+        mobileDebug('📱 MOBILE - Correzione URL chiave errato');
         // Corregge: 'https://corsproxy.io/storage/enc.key' → 'https://vixsrc.to/storage/enc.key'
         const correctedUri = originalUri.replace('https://corsproxy.io/storage/', 'https://vixsrc.to/storage/');
         options.uri = applyCorsProxy(correctedUri);
-        // console.log('📱 MOBILE - URL corretto con proxy:', options.uri);
+        mobileDebug('📱 MOBILE - URL corretto con proxy:', options.uri);
         return options;
     }
     
     // CASO 3: Segmenti video/audio da CDN - spesso funzionano senza proxy
     if (originalUri.includes('.ts?') || originalUri.includes('.m3u8?') || originalUri.includes('.vtt?')) {
-        // console.log('📱 MOBILE - Segmento media, provo senza proxy');
+        mobileDebug('📱 MOBILE - Segmento media, provo senza proxy');
         options.uri = originalUri; // Prova senza proxy
         return options;
     }
     
     // CASO 4: Chiavi di crittografia - usa proxy
     if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
-        // console.log('📱 MOBILE - Chiave di crittografia, applico proxy');
+        mobileDebug('📱 MOBILE - Chiave di crittografia, applico proxy');
         options.uri = applyCorsProxy(originalUri);
         return options;
     }
     
     // CASO 5: Altri URL - applica proxy
-    // console.log('📱 MOBILE - Altro URL, applico proxy');
+    mobileDebug('📱 MOBILE - Altro URL, applico proxy');
     options.uri = applyCorsProxy(originalUri);
     return options;
 };
