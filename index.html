@@ -3,9 +3,45 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
+<script>
+function getDeviceType() {
+    const ua = navigator.userAgent.toLowerCase();
+
+    const isTV =
+        ua.includes("smarttv") ||
+        ua.includes("appletv") ||
+        ua.includes("googletv") ||
+        ua.includes("android tv") ||
+        ua.includes("fire tv") ||
+        ua.includes("aft") ||
+        /android.*(tv|set-top|box)/i.test(ua);
+
+    const isIOS =
+        ua.includes("iphone") ||
+        ua.includes("ipad") ||
+        ua.includes("ipod");
+
+    const isAndroid =
+        ua.includes("android") && !isTV;
+
+    if (isTV) return "tv";
+    if (isIOS) return "ios";
+    if (isAndroid) return "android";
+    return "desktop";
+}
+
+const device = getDeviceType();
+const path = window.location.pathname;
+
+if (device === "ios" && !path.includes("/mobileIOS/")) {
+    window.location.href = "mobileIOS/indexIOS.html";
+}
+else if ((device === "android" || device === "tv") && !path.includes("/mobileAndroid/")) {
     window.location.href = "mobileAndroid/index.html";
-    </script>
+}
+// Desktop → index.html (nessuna azione)
+</script>
+
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
