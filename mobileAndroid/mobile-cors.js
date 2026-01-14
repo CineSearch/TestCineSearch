@@ -3,7 +3,11 @@
 let currentCorsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
 
 const CORS_PROXIES = [
-    { name: 'CodeTabs', url: 'https://api.codetabs.com/v1/proxy?quest=' }
+    { name: 'AllOrigins', url: 'https://api.allorigins.win/raw?url=' },
+    { name: 'Cors-Anywhere', url: 'https://cors-anywhere.herokuapp.com/' },
+    { name: 'CodeTabs', url: 'https://api.codetabs.com/v1/proxy?quest=' },
+    { name: 'Cors.sh', url: 'https://cors.sh/?' },
+    { name: 'ProxyCors', url: 'https://proxy.cors.sh/?' }
 ];
 
 function initMobileCors() {
