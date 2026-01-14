@@ -77,7 +77,7 @@ function createCard(item, cookieNames = [], isRemovable = false) {
   // Gestione click sulla card (per TV - avvia player a schermo intero)
   card.addEventListener("click", () => {
     // Verifica se siamo su TV
-    const isTV = document.body.classList.contains('tv');
+    const isTV = true;
     
     if (isTV) {
       // Su TV, avvia direttamente il player a schermo intero
@@ -109,7 +109,7 @@ function createCard(item, cookieNames = [], isRemovable = false) {
       e.stopPropagation();
       
       // Verifica se siamo su TV
-      const isTV = document.body.classList.contains('tv');
+      const isTV = true;
       
       if (isTV) {
         // Su TV, avvia direttamente il player a schermo intero
@@ -130,7 +130,7 @@ function createCard(item, cookieNames = [], isRemovable = false) {
       e.preventDefault();
       e.stopPropagation();
       // Lo spazio apre i preferiti per la TV
-      const isTV = document.body.classList.contains('tv');
+      const isTV = true;
       
       if (isTV) {
         // Per TV, sposta il focus al bottone favoriti
