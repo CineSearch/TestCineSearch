@@ -1773,3 +1773,89 @@ footer {
     height: 320px;
   }
 }
+.card:focus {
+  outline: 3px solid #2a09e5;
+  outline-offset: 3px;
+  transform: scale(1.05);
+  z-index: 20;
+  box-shadow: 0 0 20px rgba(42, 9, 229, 0.7);
+}
+
+.card:focus .card-title-overlay {
+  background: linear-gradient(to top, rgba(42, 9, 229, 0.8), transparent);
+}
+
+/* Stile per il bottone favoriti quando è in focus */
+.card .fav-btn:focus {
+  outline: 3px solid #ffcc00;
+  outline-offset: 2px;
+  background: #ffcc00;
+  color: #000;
+  transform: scale(1.2);
+  box-shadow: 0 0 15px rgba(255, 204, 0, 0.7);
+}
+
+/* Migliora la visibilità dei pulsanti quando la card è in focus */
+.card:focus .card-buttons button:not(.fav-btn) {
+  background-color: rgba(255, 255, 255, 0.9);
+  color: #000;
+}
+
+/* Stili specifici per TV */
+body.tv .card {
+  min-width: 240px;
+}
+
+body.tv .fav-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 1.4rem;
+}
+
+body.tv .card:focus {
+  transform: scale(1.08);
+}
+
+body.tv .video-js {
+  font-size: 1.2rem;
+}
+
+body.tv .video-js .vjs-control-bar {
+  height: 4.5em;
+  padding: 0 1.5em;
+}
+
+body.tv .video-js .vjs-big-play-button {
+  width: 90px;
+  height: 90px;
+  line-height: 84px;
+  font-size: 3.5em;
+}
+
+/* Migliora l'accessibilità per la navigazione TV */
+*:focus {
+  outline: 2px solid #2a09e5 !important;
+}
+
+/* Animazione per il focus su TV */
+@keyframes tv-focus-pulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(42, 9, 229, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(42, 9, 229, 0.8);
+  }
+}
+
+body.tv .card:focus,
+body.tv button:focus {
+  animation: tv-focus-pulse 2s infinite;
+}
+
+/* Stile per il bottone rimuovi in focus */
+.remove-btn:focus {
+  outline: 3px solid #e50914 !important;
+  background: #e50914 !important;
+  color: white !important;
+  transform: scale(1.1);
+}
