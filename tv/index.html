@@ -2,7 +2,56 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />   
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+<script>
+function getDeviceType() {
+    const ua = navigator.userAgent.toLowerCase();
+
+    const isTV =
+        ua.includes("smarttv") ||
+        ua.includes("appletv") ||
+        ua.includes("googletv") ||
+        ua.includes("android tv") ||
+        ua.includes("fire tv") ||
+        ua.includes("aft") ||
+        /android.*(tv|set-top|box)/i.test(ua);
+
+    const isIOS =
+        ua.includes("iphone") ||
+        ua.includes("ipad") ||
+        ua.includes("ipod");
+
+    const isAndroid =
+        ua.includes("android") && !isTV;
+
+    if (isTV) return "tv";
+    if (isIOS) return "ios";
+    if (isAndroid) return "android";
+    return "desktop";
+}
+
+const device = getDeviceType();
+const path = window.location.pathname;
+
+if (device === "tv" && !path.includes("/tv/")) {
+    window.location.href = "tv/index.html";
+}
+else if (device === "ios" && !path.includes("/mobileIOS/")) {
+    window.location.href = "mobileIOS/indexIOS.html";
+}
+else if (device === "android" && !path.includes("/mobileAndroid/")) {
+    window.location.href = "mobileAndroid/index.html";
+}
+</script>
+<script>
+  const isTV = /TV|SmartTV|WebOS|Tizen|Android TV|GoogleTV/i.test(navigator.userAgent);
+
+  if (isTV) {
+    document.body.classList.add('tv');
+  }
+</script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
 
@@ -50,26 +99,13 @@
             <h1>Benvenuto su CineSearch</h1>
             <p>La tua piattaforma per film e serie TV</p>
             
-<div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-  <button class="nav-btn remote-friendly" onclick="showAllMovies()">🎬 Tutti i Film</button>
-  <button class="nav-btn remote-friendly" onclick="showAllTV()">📺 Tutte le Serie TV</button>
-  <button class="nav-btn remote-friendly" onclick="showCategories()">🎭 Categorie</button>
-  <button class="nav-btn remote-friendly" onclick="showPreferiti()">⭐ Preferiti</button>
-</div>
+            <div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+              <button class="nav-btn" onclick="showAllMovies()">🎬 Tutti i Film</button>
+              <button class="nav-btn" onclick="showAllTV()">📺 Tutte le Serie TV</button>
+              <button class="nav-btn" onclick="showCategories()">🎭 Categorie</button>
+              <button class="nav-btn" onclick="showPreferiti()">⭐ Preferiti</button>
+            </div>
           </div>
-          <script>
-// Feedback visivo per telecomando
-document.addEventListener('keydown', function(e) {
-  if (e.key.startsWith('Arrow') || e.key === 'Enter' || e.key === ' ') {
-    const feedback = document.createElement('div');
-    feedback.className = 'key-press-feedback';
-    feedback.textContent = e.key.replace('Arrow', '');
-    document.body.appendChild(feedback);
-    
-    setTimeout(() => feedback.remove(), 1000);
-  }
-});
-</script>
         </section>
 
         <section id="continua-visione" style="display: none;">
@@ -350,29 +386,6 @@ document.addEventListener('keydown', function(e) {
 <script src="film-serie.js?v=00"></script>
 <script src="ricerca.js?v=00"></script>
 <script src="player.js?v=00"></script>
-<script src="tv-player-controls.js"></script>
-<script>
-  // Inizializza la navigazione TV
-  document.addEventListener('DOMContentLoaded', () => {
-    if (detectTVMode()) {
-      console.log('📺 Modalità TV attivata');
-      
-      // Inizializza navigazione TV
-      window.tvNavigation = new TVNavigation();
-      
-      // Ottimizza per TV
-      document.body.classList.add('tv');
-      
-      // Focus sulla prima card
-      setTimeout(() => {
-        const firstCard = document.querySelector('.card, .nav-btn');
-        if (firstCard) {
-          firstCard.focus();
-        }
-      }, 1000);
-    }
-  });
-</script>
 <footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.9rem; border-top: 1px solid #333; margin-top: 3rem;">
   <p>© 2025 Copyright AIMODS | Forked by cinesearch</p>
 </footer>

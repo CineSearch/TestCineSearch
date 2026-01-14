@@ -571,129 +571,7 @@ function handleRemoteNavigation(event) {
       break;
   }
 }
-function setupTVNavigation() {
-  // Gestione focus e navigazione
-  document.addEventListener('keydown', handleTVRemote);
-  
-  // Imposta il focus iniziale
-  setTimeout(() => {
-    const firstFocusable = document.querySelector('.nav-btn, .card, #search, #cors-select');
-    if (firstFocusable) {
-      firstFocusable.focus();
-    }
-  }, 500);
-}
 
-function handleTVRemote(event) {
-  const focusedElement = document.activeElement;
-  
-  // Ignora se siamo in un input field
-  if (focusedElement.tagName === 'INPUT' || focusedElement.tagName === 'SELECT' || focusedElement.tagName === 'TEXTAREA') {
-    return;
-  }
-  
-  // Navigazione con frecce
-  switch(event.key) {
-    case 'ArrowRight':
-    case 'ArrowLeft':
-    case 'ArrowUp':
-    case 'ArrowDown':
-      navigateWithArrows(event.key, focusedElement);
-      event.preventDefault();
-      break;
-      
-    case 'Enter':
-    case ' ':
-      if (focusedElement.classList.contains('card') || 
-          focusedElement.classList.contains('nav-btn') ||
-          focusedElement.classList.contains('category-card')) {
-        event.preventDefault();
-        focusedElement.click();
-      }
-      break;
-      
-    case 'Backspace':
-    case 'Escape':
-      if (document.getElementById("player").style.display === "block") {
-        event.preventDefault();
-        goBack();
-      } else if (!document.getElementById("home").style.display === "block") {
-        event.preventDefault();
-        goBackToHome();
-      }
-      break;
-      
-    case 'MediaPlayPause':
-    case 'MediaStop':
-      // Gestione tasti media del telecomando
-      if (player) {
-        event.preventDefault();
-        if (player.paused()) {
-          player.play();
-        } else {
-          player.pause();
-        }
-      }
-      break;
-  }
-}
-
-function navigateWithArrows(direction, currentElement) {
-  const focusableElements = getFocusableElements();
-  if (focusableElements.length === 0) return;
-  
-  const currentIndex = focusableElements.indexOf(currentElement);
-  let nextIndex = 0;
-  
-  if (currentIndex === -1) {
-    nextIndex = 0;
-  } else {
-    switch(direction) {
-      case 'ArrowRight':
-        nextIndex = (currentIndex + 1) % focusableElements.length;
-        break;
-      case 'ArrowLeft':
-        nextIndex = (currentIndex - 1 + focusableElements.length) % focusableElements.length;
-        break;
-      case 'ArrowDown':
-        nextIndex = Math.min(currentIndex + getGridColumns(), focusableElements.length - 1);
-        break;
-      case 'ArrowUp':
-        nextIndex = Math.max(currentIndex - getGridColumns(), 0);
-        break;
-    }
-  }
-  
-  focusableElements[nextIndex].focus();
-  scrollIntoViewIfNeeded(focusableElements[nextIndex]);
-}
-
-function getFocusableElements() {
-  return Array.from(document.querySelectorAll(
-    'button, .card, .category-card, #search, #cors-select, .nav-btn, .page-btn, .episode-item'
-  )).filter(el => 
-    el.offsetParent !== null && 
-    !el.disabled && 
-    el.style.display !== 'none'
-  );
-}
-
-function getGridColumns() {
-  const grid = document.querySelector('.vertical-grid');
-  if (!grid) return 1;
-  
-  const style = window.getComputedStyle(grid);
-  const gridTemplateColumns = style.gridTemplateColumns;
-  return gridTemplateColumns.split(' ').length;
-}
-
-function scrollIntoViewIfNeeded(element) {
-  element.scrollIntoView({
-    behavior: 'smooth',
-    block: 'center',
-    inline: 'center'
-  });
-}
 
 window.addEventListener("DOMContentLoaded", async () => {
   // console.log("🚀 Pagina caricata");
@@ -783,9 +661,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         // Imposta lo stato iniziale per la home
         history.replaceState({ section: 'home' }, '', window.location.pathname);
     }
-      if (document.body.classList.contains('tv')) {
-    setupTVNavigation();}
-
 });
 
 window.addEventListener("scroll", () => {

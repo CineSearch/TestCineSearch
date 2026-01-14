@@ -46,7 +46,9 @@ function createCard(item, cookieNames = [], isRemovable = false) {
   const itemId = `${mediaType}-${item.id}`;
   const isInPreferiti = preferiti.includes(itemId);
   
-  // MODIFICA: Aggiungi tabindex="0" ai pulsanti
+  // Aggiungi un ID univoco per il bottone favoriti
+  const favBtnId = `fav-btn-${mediaType}-${item.id}`;
+  
   card.innerHTML = `
     <div class="card-image-wrapper">
       <img src="${poster}" alt="${rawTitle}">
@@ -60,8 +62,8 @@ function createCard(item, cookieNames = [], isRemovable = false) {
         <div>${tipo}</div>
       </div>
       <div class="card-buttons">
-        ${isRemovable ? `<button class="remove-btn" title="Rimuovi" tabindex="0">❌</button>` : ""}
-        <button class="fav-btn" title="${isInPreferiti ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" tabindex="0">
+        ${isRemovable ? `<button class="remove-btn" title="Rimuovi" tabindex="-1">❌</button>` : ""}
+        <button id="${favBtnId}" class="fav-btn" title="${isInPreferiti ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" tabindex="0">
           ${isInPreferiti ? '⭐' : '☆'}
         </button>
       </div>
@@ -72,57 +74,107 @@ function createCard(item, cookieNames = [], isRemovable = false) {
     card.classList.add('in-preferiti');
   }
 
-  const favBtn = card.querySelector(".fav-btn");
-  
-  // MODIFICA: Aggiungi gestione Enter/Spazio per il pulsante preferiti
-  favBtn.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      e.stopPropagation();
-      favBtn.click();
-    }
-  });
-  
-  favBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const preferiti = getPreferiti();
-    const itemId = `${mediaType}-${item.id}`;
+  // Gestione click sulla card (per TV - avvia player a schermo intero)
+  card.addEventListener("click", () => {
+    // Verifica se siamo su TV
+    const isTV = document.body.classList.contains('tv');
     
-    if (preferiti.includes(itemId)) {
-      removePreferito(item);
-      card.classList.remove('in-preferiti');
-      favBtn.innerHTML = '☆';
-      favBtn.title = 'Aggiungi ai preferiti';
+    if (isTV) {
+      // Su TV, avvia direttamente il player a schermo intero
+      card.classList.add("clicked");
+      setTimeout(() => {
+        openPlayer(item);
+        
+        // Metti in pausa brevemente per poi attivare il fullscreen
+        setTimeout(() => {
+          const player = videojs.getPlayer("player-video");
+          if (player) {
+            player.requestFullscreen();
+          }
+        }, 500);
+      }, 300);
     } else {
-      addPreferito(item);
-      card.classList.add('in-preferiti');
-      favBtn.innerHTML = '⭐';
-      favBtn.title = 'Rimuovi dai preferiti';
+      // Su altri dispositivi, comportamento normale
+      card.classList.add("clicked");
+      setTimeout(() => {
+        openPlayer(item);
+      }, 300);
     }
-    if (document.getElementById("preferiti-section") && 
-        document.getElementById("preferiti-section").style.display === "block") {
-      loadPreferitiSection();
-    }
-    if (document.getElementById("preferiti")) {
-      loadPreferiti();
-    }
-    updatePreferitiCounter();
   });
 
-  // MODIFICA: Gestione pulsante rimuovi (se presente)
+  // Gestione tastiera per la card
+  card.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Verifica se siamo su TV
+      const isTV = document.body.classList.contains('tv');
+      
+      if (isTV) {
+        // Su TV, avvia direttamente il player a schermo intero
+        openPlayer(item);
+        
+        // Metti in pausa brevemente per poi attivare il fullscreen
+        setTimeout(() => {
+          const player = videojs.getPlayer("player-video");
+          if (player) {
+            player.requestFullscreen();
+          }
+        }, 500);
+      } else {
+        // Su altri dispositivi, comportamento normale
+        openPlayer(item);
+      }
+    } else if (e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      e.stopPropagation();
+      // Lo spazio apre i preferiti per la TV
+      const isTV = document.body.classList.contains('tv');
+      
+      if (isTV) {
+        // Per TV, sposta il focus al bottone favoriti
+        const favBtn = document.getElementById(favBtnId);
+        if (favBtn) {
+          favBtn.focus();
+        }
+      }
+    }
+  });
+
+  // Gestione del bottone favoriti
+  const favBtn = card.querySelector(".fav-btn");
+  favBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    togglePreferito(item, card, favBtn);
+  });
+
+  // Gestione tastiera per il bottone favoriti
+  favBtn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
+      e.preventDefault();
+      e.stopPropagation();
+      togglePreferito(item, card, favBtn);
+    } else if (e.key === "Escape" || e.key === "Backspace") {
+      // Torna alla card
+      e.preventDefault();
+      e.stopPropagation();
+      card.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowRight" || 
+               e.key === "ArrowUp" || e.key === "ArrowDown") {
+      // Navigazione con frecce - ritorna alla card
+      e.preventDefault();
+      e.stopPropagation();
+      card.focus();
+    }
+  });
+
   if (isRemovable) {
     const removeBtn = card.querySelector(".remove-btn");
-    
-    removeBtn.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        e.stopPropagation();
-        removeBtn.click();
-      }
-    });
-    
     removeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      e.preventDefault();
       const confirmDelete = confirm(`Vuoi rimuovere "${rawTitle}" dalla visione?`);
       if (confirmDelete) {
         cookieNames.forEach((storageKey) => {
@@ -139,28 +191,35 @@ function createCard(item, cookieNames = [], isRemovable = false) {
     });
   }
 
-  // MODIFICA: Prevenire l'attivazione della card quando si preme su un pulsante
-  card.addEventListener("keydown", (e) => {
-    // Se l'evento viene da un pulsante, lascia che il pulsante gestisca
-    if (e.target.matches('.fav-btn, .remove-btn')) {
-      return;
-    }
-    
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      card.click();
-    }
-  });
-
-  card.addEventListener("click", () => {
-    card.classList.add("clicked");
-    setTimeout(() => {
-      openPlayer(item);
-    }, 300);
-  });
-
   return card;
 }
+
+function togglePreferito(item, card, favBtn) {
+  const preferiti = getPreferiti();
+  const itemId = `${item.media_type || (item.title ? "movie" : "tv")}-${item.id}`;
+  
+  if (preferiti.includes(itemId)) {
+    removePreferito(item);
+    card.classList.remove('in-preferiti');
+    favBtn.innerHTML = '☆';
+    favBtn.title = 'Aggiungi ai preferiti';
+  } else {
+    addPreferito(item);
+    card.classList.add('in-preferiti');
+    favBtn.innerHTML = '⭐';
+    favBtn.title = 'Rimuovi dai preferiti';
+  }
+  
+  if (document.getElementById("preferiti-section") && 
+      document.getElementById("preferiti-section").style.display === "block") {
+    loadPreferitiSection();
+  }
+  if (document.getElementById("preferiti")) {
+    loadPreferiti();
+  }
+  updatePreferitiCounter();
+}
+
 
 function scrollCarousel(carouselId, direction) {
   const carousel = document.getElementById(carouselId);

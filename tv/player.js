@@ -1,190 +1,7 @@
 let player = null;
 let currentItem = null;
 let currentSeasons = [];
-let isPlayerLoading = false;
-document.addEventListener('DOMContentLoaded', () => {
-  setupPlayerFocus();
-});
 
-let isTVMode = false;
-let tvInfoTimeout = null;
-
-// Rileva se siamo su TV
-function detectTVMode() {
-  const ua = navigator.userAgent;
-  const screenWidth = window.screen.width;
-  const isTV = ua.includes('SmartTV') || 
-               ua.includes('WebOS') || 
-               ua.includes('Tizen') || 
-               ua.includes('Android TV') ||
-               ua.includes('AppleTV') ||
-               (screenWidth >= 1600 && screenHeight >= 900 && !ua.includes('Mobile'));
-  return isTV;
-}
-
-// Abilita modalità TV
-function enableTVMode() {
-  isTVMode = detectTVMode();
-  
-  if (isTVMode) {
-    document.getElementById("player").classList.add("tv-fullscreen-player");
-    
-    // Nascondi header quando il player è attivo
-    document.getElementById("header").style.display = "none";
-    
-    // Crea overlay info per TV
-    createTVInfoOverlay();
-    
-    // Imposta timeout per nascondere info
-    resetTVInfoTimeout();
-    
-    // Focus sui controlli del player
-    setTimeout(() => {
-      if (player) {
-        player.focus();
-        player.play();
-      }
-    }, 500);
-  }
-}
-
-// Crea overlay info per TV
-function createTVInfoOverlay() {
-  const overlay = document.createElement("div");
-  overlay.className = "tv-info-overlay";
-  overlay.innerHTML = `
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <div>
-        <h2 id="tv-player-title" style="margin: 0; font-size: 1.8rem;">${currentItem?.title || currentItem?.name || ''}</h2>
-        <div id="tv-player-meta" style="opacity: 0.8; font-size: 1rem;"></div>
-      </div>
-      <button class="tv-close-btn" onclick="goBack()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
-        ✕ Chiudi
-      </button>
-    </div>
-  `;
-  
-  document.querySelector(".video-container").prepend(overlay);
-  
-  // Aggiorna meta info
-  if (currentItem) {
-    updateTVInfoOverlay();
-  }
-}
-
-// Aggiorna overlay info
-function updateTVInfoOverlay() {
-  const titleEl = document.getElementById("tv-player-title");
-  const metaEl = document.getElementById("tv-player-meta");
-  
-  if (titleEl && currentItem) {
-    titleEl.textContent = currentItem.title || currentItem.name || '';
-  }
-  
-  if (metaEl && currentItem) {
-    const mediaType = currentItem.media_type || (currentItem.title ? "movie" : "tv");
-    const releaseDate = currentItem.release_date || currentItem.first_air_date || '';
-    const year = releaseDate.slice(0, 4) || '';
-    
-    metaEl.innerHTML = `${mediaType === 'movie' ? '🎬 Film' : '📺 Serie'} • ${year} • ⭐ ${currentItem.vote_average?.toFixed(1) || 'N/A'}`;
-  }
-}
-
-// Reset timeout per nascondere info
-function resetTVInfoTimeout() {
-  if (tvInfoTimeout) clearTimeout(tvInfoTimeout);
-  
-  const overlay = document.querySelector(".tv-info-overlay");
-  if (overlay) {
-    overlay.classList.remove("hidden");
-    
-    tvInfoTimeout = setTimeout(() => {
-      overlay.classList.add("hidden");
-    }, 5000); // Nascondi dopo 5 secondi
-  }
-}
-
-// Mostra overlay info temporaneamente
-function showTVInfoTemporarily() {
-  const overlay = document.querySelector(".tv-info-overlay");
-  if (overlay) {
-    overlay.classList.remove("hidden");
-    resetTVInfoTimeout();
-  }
-}
-
-// Modalità selezione episodi per TV
-function showTVEpisodeSelector() {
-  const container = document.querySelector(".video-container");
-  const selector = document.createElement("div");
-  selector.className = "tv-episode-selector-modal";
-  selector.innerHTML = `
-    <div style="background: rgba(0,0,0,0.95); padding: 30px; border-radius: 12px; max-width: 800px; margin: 50px auto;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2 style="margin: 0; color: white;">Seleziona Episodio</h2>
-        <button onclick="closeTVEpisodeSelector()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">
-          ✕ Chiudi
-        </button>
-      </div>
-      <div class="tv-episode-selector" id="tv-episodes-grid"></div>
-    </div>
-  `;
-  
-  container.appendChild(selector);
-  
-  // Carica episodi nella griglia
-  loadTVEpisodesGrid();
-}
-
-function closeTVEpisodeSelector() {
-  const modal = document.querySelector(".tv-episode-selector-modal");
-  if (modal) {
-    modal.remove();
-  }
-}
-
-function loadTVEpisodesGrid() {
-  const grid = document.getElementById("tv-episodes-grid");
-  if (!grid) return;
-  
-  grid.innerHTML = "";
-  
-  // Esempio: carica episodi per la stagione corrente
-  const seasons = currentSeasons;
-  const seasonSelector = document.getElementById("season-select");
-  const currentSeason = seasonSelector ? parseInt(seasonSelector.value) : 1;
-  
-  seasons.forEach(season => {
-    if (season.season_number === currentSeason) {
-      // Qui dovresti caricare gli episodi per questa stagione
-      // Per ora mostriamo un esempio
-      for (let i = 1; i <= 10; i++) {
-        const episodeCard = document.createElement("div");
-        episodeCard.className = "tv-episode-card";
-        episodeCard.tabIndex = 0;
-        episodeCard.innerHTML = `
-          <div style="font-weight: bold; font-size: 1.2rem;">Ep. ${i}</div>
-          <div style="font-size: 0.9rem; opacity: 0.8;">Episodio ${i}</div>
-        `;
-        
-        episodeCard.addEventListener("click", () => {
-          // Carica l'episodio
-          loadVideo(false, currentItem.id, currentSeason, i);
-          closeTVEpisodeSelector();
-        });
-        
-        episodeCard.addEventListener("keydown", (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            episodeCard.click();
-          }
-        });
-        
-        grid.appendChild(episodeCard);
-      }
-    }
-  });
-}
 async function openPlayer(item) {
   console.log('🎬 player.js - openPlayer chiamato per:', item);
   
@@ -193,17 +10,10 @@ async function openPlayer(item) {
   // Salva la sezione corrente prima di aprire il player
   const currentSection = document.querySelector('section[style*="block"]')?.id || 'home';
   
-  // Nascondi tutto
-  hideAllSections();
+  document.getElementById("home").style.display = "none";
+  document.getElementById("results").style.display = "none";
   document.getElementById("player").style.display = "block";
-  
-  // Abilita modalità TV se rilevata
-  enableTVMode();
-  
-  if (document.body.classList.contains('tv')) {
-    setupTVPlayerControls();
-  }
-  
+
   // Aggiungi stato all'history
   history.pushState({ 
     section: 'player', 
@@ -211,15 +21,28 @@ async function openPlayer(item) {
     item: item 
   }, '', '#player');
 
-  // Reset player
   if (player) {
+    console.log('🎬 player.js - Pulizia player esistente');
     player.dispose();
     player = null;
+    const oldVideo = document.getElementById("player-video");
+    if (oldVideo) {
+      oldVideo.remove();
+    }
+    
+    const videoContainer = document.querySelector(".video-container");
+    const newVideo = document.createElement("video");
+    newVideo.id = "player-video";
+    newVideo.className = "video-js vjs-theme-cinesearch vjs-big-play-centered";
+    newVideo.setAttribute("controls", "");
+    newVideo.setAttribute("preload", "auto");
+    newVideo.setAttribute("playsinline", "");
+    newVideo.setAttribute("crossorigin", "anonymous");
+    
+    const loadingOverlay = document.getElementById("loading-overlay");
+    videoContainer.insertBefore(newVideo, loadingOverlay);
   }
-  
-  // Mostra loading
-  showLoading(true, "Preparazione contenuto...");
-  
+
   const title = item.title || item.name;
   const releaseDate = item.release_date || item.first_air_date || "N/A";
   const mediaType = item.media_type || (item.title ? "movie" : "tv");
@@ -231,31 +54,13 @@ async function openPlayer(item) {
 
   if (mediaType === "tv") {
     console.log('🎬 player.js - Serie TV, carico stagioni');
-    
-    // Per TV: mostra direttamente il selettore episodi
-    if (isTVMode) {
-      document.getElementById("episode-warning").style.display = "flex";
-      await loadTVSeasons(item.id);
-      
-      // Mostra selettore episodi in modalità TV
-      showTVEpisodeSelector();
-    } else {
-      // Per altri dispositivi, procedi normalmente
-      document.getElementById("episode-warning").style.display = "flex";
-      await loadTVSeasons(item.id);
-    }
+    document.getElementById("episode-warning").style.display = "flex";
+    await loadTVSeasons(item.id);
   } else {
     console.log('🎬 player.js - Film, carico direttamente');
     document.getElementById("episode-warning").style.display = "none";
     document.getElementById("episode-selector").style.display = "none";
-    
-    // Per film: carica direttamente
     await loadVideo(true, item.id);
-    
-    // Per TV: mostra info overlay
-    if (isTVMode) {
-      createTVInfoOverlay();
-    }
   }
 
   window.scrollTo(0, 0);
@@ -319,10 +124,8 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
     episode
   });
   
-  // MODIFICA: Imposta flag di caricamento
-  isPlayerLoading = true;
   showLoading(true);
-  
+
   try {
     console.log('🎬 player.js - Setup video.js xhr hook');
     setupVideoJsXhrHook();
@@ -376,9 +179,11 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
         vhs: {
           overrideNative: true,
           bandwidth: 1000000,
+          // AGGIUNGI QUESTA OPZIONE
           limitRenditionByPlayerDimensions: false
         },
       },
+      // IMPOSTAZIONI MIGLIORATE PER LA TIMELINE
       userActions: {
         hotkeys: true,
         click: true,
@@ -394,7 +199,7 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
           "currentTimeDisplay",
           "timeDivider",
           "durationDisplay",
-          "progressControl",
+          "progressControl", // ASSICURATI CHE SIA PRESENTE
           "remainingTimeDisplay",
           "playbackRateMenuButton",
           "chaptersButton",
@@ -419,9 +224,6 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
     player.ready(function () {
       console.log('🎬 player.js - Video.js ready');
       setupKeyboardShortcuts();
-      
-      // MODIFICA: Rilascia il flag di caricamento
-      isPlayerLoading = false;
       showLoading(false);
       
       trackVideoProgress(
@@ -431,12 +233,21 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
         season,
         episode
       );
-
+    const isTV = document.body.classList.contains('tv');
+    if (isTV) {
+      console.log('🎬 player.js - TV detected, entering fullscreen mode');
+      setTimeout(() => {
+        player.requestFullscreen().catch(e => {
+          console.log('🎬 player.js - Fullscreen error:', e);
+        });
+      }, 1000);
+    }
       // FIX FINALE PER TIMELINE - Forza il ridisegno
       setTimeout(() => {
         const progressControl = player.controlBar.getChild('progressControl');
         if (progressControl) {
           console.log('🎬 player.js - Aggiornamento progress control');
+          // Forza il ridisegno della timeline
           progressControl.el().style.display = 'none';
           progressControl.el().offsetHeight; // Trigger reflow
           progressControl.el().style.display = '';
@@ -449,6 +260,7 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
       });
     });
 
+    // AGGIUNGI QUESTO LISTENER PER IL MOUSE MOVE
     player.on('mousemove', function() {
       const mouseDisplay = player.controlBar.progressControl.mouseDisplay;
       if (mouseDisplay) {
@@ -459,9 +271,9 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
     player.on("error", function () {
       console.error('🎬 player.js - Errore video.js:', player.error());
       showError("Errore durante il caricamento del video");
-      isPlayerLoading = false; // MODIFICA: Rilascia flag in caso di errore
     });
-    
+
+    // Aggiungi listener per debug
     player.on('loadedmetadata', function() {
       console.log('🎬 player.js - Metadata loaded, duration:', player.duration());
     });
@@ -469,12 +281,8 @@ async function loadVideo(isMovie, id, season = null, episode = null) {
   } catch (err) {
     console.error('🎬 player.js - Errore in loadVideo:', err);
     showError("Impossibile caricare il video. Riprova più tardi.");
-    isPlayerLoading = false; // MODIFICA: Rilascia flag in caso di errore
-  } finally {
-    showLoading(false);
   }
 }
-
 
 async function getDirectStream(tmdbId, isMovie, season = null, episode = null) {
   console.log('🎬 player.js - getDirectStream chiamato:', {
@@ -584,11 +392,6 @@ async function getDirectStream(tmdbId, isMovie, season = null, episode = null) {
 function goBack() {
   console.log("🎬 player.js - goBack chiamato");
   
-  // MODIFICA: Riabilita lo scroll
-  document.body.style.overflow = 'auto';
-  document.body.classList.remove('no-scroll');
-  isPlayerLoading = false;
-  
   if (player) {
     player.dispose();
     player = null;
@@ -648,37 +451,40 @@ function goBack() {
       document.getElementById("continua-visione").style.display = "none";
     }
   }, 300);
-  
   window.scrollTo(0, 0);
 }
 
-// NUOVA FUNZIONE: setupPlayerFocus
-function setupPlayerFocus() {
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && 
-          mutation.attributeName === 'style' &&
-          document.getElementById("player").style.display === "block") {
-        
-        setTimeout(() => {
-          const focusableElements = document.querySelectorAll(
-            '#player button, #player .back-btn, #player .episode-item'
-          );
-          
-          if (focusableElements.length > 0) {
-            focusableElements[0].focus();
-          }
-        }, 100);
-      }
-    });
-  });
+function goBack() {
+  // console.log("🔙 Tornando indietro dal player...");
   
-  observer.observe(document.getElementById("player"), {
-    attributes: true,
-    attributeFilter: ['style']
-  });
-}
+  if (player) {
+    player.dispose();
+    player = null;
+  }
+  
+  const videoElement = document.getElementById("player-video");
+  if (videoElement) {
+    videoElement.remove();
+  }
 
+  currentItem = null;
+  currentSeasons = [];
+
+  document.getElementById("player").style.display = "none";
+  document.getElementById("home").style.display = "block";
+  
+  removeVideoJsXhrHook();
+  // console.log("🔄 Aggiorno 'Continua visione' dopo aver guardato...");
+
+  setTimeout(async () => {
+    await loadContinuaDaStorage();
+    const carousel = document.getElementById("continua-carousel");
+    if (carousel && carousel.children.length === 0) {
+      document.getElementById("continua-visione").style.display = "none";
+    }
+  }, 300);
+  window.scrollTo(0, 0);
+}
 
 function handleKeyboardShortcuts(event) {
   if (!player || !player.readyState()) {
@@ -974,137 +780,6 @@ function showVolumeFeedback(volumePercent) {
     volumeDisplay.style.opacity = "0";
   }, 1000);
 }
-
-function setupTVPlayerControls() {
-  // Assicurati che i controlli siano accessibili
-  const playerContainer = document.getElementById("player");
-  
-  const makeFocusable = () => {
-    const buttons = playerContainer.querySelectorAll('button');
-    buttons.forEach(btn => {
-      if (!btn.hasAttribute('tabindex')) {
-        btn.setAttribute('tabindex', '0');
-      }
-    });
-    
-    const episodeItems = playerContainer.querySelectorAll('.episode-item');
-    episodeItems.forEach(item => {
-      if (!item.hasAttribute('tabindex')) {
-        item.setAttribute('tabindex', '0');
-        item.setAttribute('role', 'button');
-      }
-    });
-  };
-  
-  makeFocusable();
-  
-  const observer = new MutationObserver(makeFocusable);
-  observer.observe(playerContainer, {
-    childList: true,
-    subtree: true
-  });
-  
-  document.addEventListener('keydown', handleTVPlayerControls);
-}
-
-function handleTVPlayerControls(event) {
-  const playerVisible = document.getElementById("player").style.display === "block";
-  if (!playerVisible) {
-    return;
-  }
-  
-  // MODIFICA: Se siamo in caricamento, blocca tutto tranne Esc/Backspace
-  if (isPlayerLoading && event.key !== 'Escape' && event.key !== 'Backspace') {
-    event.preventDefault();
-    return;
-  }
-  
-  // Ignora se l'utente sta interagendo con controlli del player
-  if (event.target.closest('.vjs-control-bar') || 
-      event.target.matches('input, select, textarea')) {
-    return;
-  }
-  
-  switch(event.key) {
-    case 'MediaPlayPause':
-    case ' ':
-      if (player && player.paused) {
-        event.preventDefault();
-        player.play();
-      } else if (player) {
-        event.preventDefault();
-        player.pause();
-      }
-      break;
-      
-    case 'MediaStop':
-    case 'Escape':
-    case 'Backspace':
-      event.preventDefault();
-      goBack();
-      break;
-      
-    case 'MediaFastForward':
-    case 'ArrowRight':
-      if (!event.repeat && player && player.currentTime) {
-        event.preventDefault();
-        const newTime = Math.min(player.currentTime() + 10, player.duration());
-        player.currentTime(newTime);
-        showSeekFeedback('+10s');
-      }
-      break;
-      
-    case 'MediaRewind':
-    case 'ArrowLeft':
-      if (!event.repeat && player && player.currentTime) {
-        event.preventDefault();
-        const newTime = Math.max(player.currentTime() - 10, 0);
-        player.currentTime(newTime);
-        showSeekFeedback('-10s');
-      }
-      break;
-      
-    case 'ArrowUp':
-      event.preventDefault();
-      if (player && player.volume) {
-        player.volume(Math.min(player.volume() + 0.1, 1));
-        showVolumeFeedback(Math.round(player.volume() * 100));
-      }
-      break;
-      
-    case 'ArrowDown':
-      event.preventDefault();
-      if (player && player.volume) {
-        player.volume(Math.max(player.volume() - 0.1, 0));
-        showVolumeFeedback(Math.round(player.volume() * 100));
-      }
-      break;
-      
-    case 'KeyF':
-      event.preventDefault();
-      if (player.isFullscreen) {
-        player.exitFullscreen();
-      } else {
-        player.requestFullscreen();
-      }
-      break;
-      
-    case 'KeyM':
-      event.preventDefault();
-      if (player.muted) {
-        player.muted(!player.muted());
-      }
-      break;
-      
-    case 'Enter':
-      // Gestisci l'attivazione dell'elemento in focus
-      if (event.target.matches('.episode-item')) {
-        event.target.click();
-      }
-      break;
-  }
-}
-
 
 function showError(message, details = "") {
   showLoading(false);
