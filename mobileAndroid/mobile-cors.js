@@ -1,20 +1,16 @@
-// mobile-cors.js - Gestione CORS proxy
+// mobile-cors.js - Gestione CORS proxy (solo CodeTabs + corsproxy.io)
 
 let currentCorsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
 
 const CORS_PROXIES = [
-    { name: 'AllOrigins', url: 'https://api.allorigins.win/raw?url=' },
-    { name: 'Cors-Anywhere', url: 'https://cors-anywhere.herokuapp.com/' },
     { name: 'CodeTabs', url: 'https://api.codetabs.com/v1/proxy?quest=' },
-    { name: 'Cors.sh', url: 'https://cors.sh/?' },
-    { name: 'ProxyCors', url: 'https://proxy.cors.sh/?' }
+    { name: 'CorsProxy.io', url: 'https://corsproxy.io/?' }
 ];
 
 function initMobileCors() {
     const corsSelect = document.getElementById('mobile-cors-select');
-    
     if (!corsSelect) return;
-    
+
     // Aggiungi opzioni
     corsSelect.innerHTML = '';
     CORS_PROXIES.forEach(proxy => {
@@ -23,13 +19,13 @@ function initMobileCors() {
         option.textContent = proxy.name;
         corsSelect.appendChild(option);
     });
-    
-    // Carica proxy salvato o usa il primo
-    const savedProxy = localStorage.getItem('mobile-cors-proxy') || CORS_PROXIES[1].url; // Usa AllOrigins come default
+
+    // Carica proxy salvato o usa CodeTabs come default
+    const savedProxy = localStorage.getItem('mobile-cors-proxy') || CORS_PROXIES[0].url;
     currentCorsProxy = savedProxy;
     corsSelect.value = savedProxy;
-    
-    corsSelect.addEventListener('change', function() {
+
+    corsSelect.addEventListener('change', function () {
         currentCorsProxy = this.value;
         localStorage.setItem('mobile-cors-proxy', currentCorsProxy);
         console.log('CORS proxy mobile cambiato a:', currentCorsProxy);
@@ -37,27 +33,21 @@ function initMobileCors() {
 }
 
 function applyCorsProxy(url) {
-    // NON applicare il proxy se l'URL è già un URL del proxy CORS
-    if (url.includes('corsproxy.io') || url.includes('cors-anywhere') || 
-        url.includes('allorigins.win') || url.includes('api.codetabs.com')) {
+    // NON applicare il proxy se è già proxato
+    if (url.includes('corsproxy.io') || url.includes('api.codetabs.com')) {
         return url;
     }
-    
-    if (!currentCorsProxy || currentCorsProxy === '') {
-        return url;
-    }
-    
-    // Decodifica se necessario per evitare doppia codifica
+
+    if (!currentCorsProxy) return url;
+
+    // Evita doppia codifica
     try {
         const decodedUrl = decodeURIComponent(url);
-        // Se l'URL decodificato inizia già con il proxy, ritorna l'URL originale
         if (decodedUrl.startsWith(currentCorsProxy)) {
             return url;
         }
-    } catch (e) {
-        // Ignora errori di decodifica
-    }
-    
+    } catch (e) {}
+
     return currentCorsProxy + encodeURIComponent(url);
 }
 
