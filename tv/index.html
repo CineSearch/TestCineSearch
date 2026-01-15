@@ -3,7 +3,54 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
+    
+<script>
+function getDeviceType() {
+    const ua = navigator.userAgent.toLowerCase();
+
+    const isTV =
+        ua.includes("smarttv") ||
+        ua.includes("appletv") ||
+        ua.includes("googletv") ||
+        ua.includes("android tv") ||
+        ua.includes("fire tv") ||
+        ua.includes("aft") ||
+        /android.*(tv|set-top|box)/i.test(ua);
+
+    const isIOS =
+        ua.includes("iphone") ||
+        ua.includes("ipad") ||
+        ua.includes("ipod");
+
+    const isAndroid =
+        ua.includes("android") && !isTV;
+
+    if (isTV) return "tv";
+    if (isIOS) return "ios";
+    if (isAndroid) return "android";
+    return "desktop";
+}
+
+const device = getDeviceType();
+const path = window.location.pathname;
+
+if (device === "tv" && !path.includes("/tv/")) {
+    window.location.href = "tv/index.html";
+}
+else if (device === "ios" && !path.includes("/mobileIOS/")) {
+    window.location.href = "mobileIOS/indexIOS.html";
+}
+else if (device === "android" && !path.includes("/mobileAndroid/")) {
+    window.location.href = "mobileAndroid/index.html";
+}
+</script>
+<script>
+  const isTV = /TV|SmartTV|WebOS|Tizen|Android TV|GoogleTV/i.test(navigator.userAgent);
+
+  if (isTV) {
+    document.body.classList.add('tv');
+  }
+</script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
@@ -49,7 +96,7 @@
       <div id="home">
         <section class="hero">
           <div class="hero-content">
-            <h1>Benvenuto su CineSearch TV</h1>
+            <h1>Benvenuto su CineSearch</h1>
             <p>La tua piattaforma per film e serie TV</p>
             
             <div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">

@@ -10,8 +10,8 @@ async function openPlayer(item) {
   // Salva la sezione corrente prima di aprire il player
   const currentSection = document.querySelector('section[style*="block"]')?.id || 'home';
   
-  // Nascondi tutte le sezioni e mostra solo il player
-  hideAllSections();
+  document.getElementById("home").style.display = "none";
+  document.getElementById("results").style.display = "none";
   document.getElementById("player").style.display = "block";
 
   // Aggiungi stato all'history
@@ -63,9 +63,6 @@ async function openPlayer(item) {
     await loadVideo(true, item.id);
   }
 
-  // Nascondi l'header quando il player è attivo
-  document.getElementById("header").style.display = "none";
-  
   window.scrollTo(0, 0);
 }
 

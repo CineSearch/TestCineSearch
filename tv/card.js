@@ -3,7 +3,7 @@ function createCard(item, cookieNames = [], isRemovable = false) {
   card.className = "card";
   card.setAttribute("tabindex", "0");
   card.setAttribute("role", "button");
-  card.setAttribute("aria-label", `${item.title || item.name || "Contenuto"} - Premi Invio o Spazio per aprire`);
+  card.setAttribute("aria-label", `${item.title || item.name || "Contenuto"} - Premi Invio per opzioni`);
 
   const poster = item.poster_path
     ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
@@ -46,14 +46,28 @@ function createCard(item, cookieNames = [], isRemovable = false) {
   const itemId = `${mediaType}-${item.id}`;
   const isInPreferiti = preferiti.includes(itemId);
   
-  // Aggiungi un ID univoco per il bottone favoriti
-  const favBtnId = `fav-btn-${mediaType}-${item.id}`;
-  
   card.innerHTML = `
     <div class="card-image-wrapper">
       <img src="${poster}" alt="${rawTitle}">
       <div class="card-title-overlay">${title}</div>
       ${badge}
+      <!-- Overlay opzioni per TV -->
+      <div class="card-overlay-options" style="display: none;">
+        <div class="overlay-content">
+          <button class="overlay-option play-option" tabindex="-1">
+            <i class="fas fa-play"></i>
+            <span>PLAY</span>
+          </button>
+          <button class="overlay-option fav-option" tabindex="-1" data-item-id="${itemId}" data-is-fav="${isInPreferiti}">
+            ${isInPreferiti ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'}
+            <span>${isInPreferiti ? 'Rimuovi' : 'Aggiungi'}</span>
+          </button>
+          ${isRemovable ? `<button class="overlay-option remove-option" tabindex="-1">
+            <i class="fas fa-trash"></i>
+            <span>Rimuovi</span>
+          </button>` : ''}
+        </div>
+      </div>
     </div>
     <div class="card-content">
       <div class="card-meta">
@@ -61,61 +75,54 @@ function createCard(item, cookieNames = [], isRemovable = false) {
         <div>${voto}</div>
         <div>${tipo}</div>
       </div>
-      <div class="card-buttons">
-        ${isRemovable ? `<button class="remove-btn" title="Rimuovi" tabindex="-1">❌</button>` : ""}
-        <button id="${favBtnId}" class="fav-btn" title="${isInPreferiti ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}" tabindex="0">
-          ${isInPreferiti ? '⭐' : '☆'}
-        </button>
-      </div>
     </div>
   `;
 
-  if (isInPreferiti) {
-    card.classList.add('in-preferiti');
-  }
-
-  // Gestione click sulla card (per TV - avvia player a schermo intero)
-  card.addEventListener("click", () => {
-    // Verifica se siamo su TV
-    const isTV = true;
-    
+  // Gestione focus per TV
+  card.addEventListener("focus", (e) => {
+    const isTV = document.body.classList.contains('tv');
     if (isTV) {
-      // Su TV, avvia direttamente il player a schermo intero
-      card.classList.add("clicked");
+      // Nascondi la card e mostra l'overlay
+      const overlay = card.querySelector(".card-overlay-options");
+      const imageWrapper = card.querySelector(".card-image-wrapper");
+      
+      imageWrapper.style.filter = "brightness(0.3)";
+      overlay.style.display = "block";
+      
+      // Metti il focus sul primo pulsante dell'overlay
       setTimeout(() => {
-        openPlayer(item);
-        
-        // Metti in pausa brevemente per poi attivare il fullscreen
-        setTimeout(() => {
-          const player = videojs.getPlayer("player-video");
-          if (player) {
-            player.requestFullscreen();
-          }
-        }, 500);
-      }, 300);
-    } else {
-      // Su altri dispositivi, comportamento normale
-      card.classList.add("clicked");
-      setTimeout(() => {
-        openPlayer(item);
-      }, 300);
+        const firstButton = overlay.querySelector(".overlay-option");
+        if (firstButton) {
+          firstButton.focus();
+        }
+      }, 100);
     }
   });
 
-  // Gestione tastiera per la card
-  card.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
+  card.addEventListener("blur", (e) => {
+    const isTV = document.body.classList.contains('tv');
+    if (isTV) {
+      const overlay = card.querySelector(".card-overlay-options");
+      const imageWrapper = card.querySelector(".card-image-wrapper");
       
-      // Verifica se siamo su TV
-      const isTV = true;
+      // Nascondi l'overlay e ripristina l'immagine
+      overlay.style.display = "none";
+      imageWrapper.style.filter = "brightness(1)";
+    }
+  });
+
+  // Gestione click sull'overlay PLAY
+  const playOption = card.querySelector(".play-option");
+  if (playOption) {
+    playOption.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      const isTV = document.body.classList.contains('tv');
       
       if (isTV) {
-        // Su TV, avvia direttamente il player a schermo intero
         openPlayer(item);
         
-        // Metti in pausa brevemente per poi attivare il fullscreen
         setTimeout(() => {
           const player = videojs.getPlayer("player-video");
           if (player) {
@@ -123,58 +130,53 @@ function createCard(item, cookieNames = [], isRemovable = false) {
           }
         }, 500);
       } else {
-        // Su altri dispositivi, comportamento normale
         openPlayer(item);
       }
-    } else if (e.key === " " || e.key === "Spacebar") {
-      e.preventDefault();
+    });
+  }
+
+  // Gestione click sull'overlay PREFERITI
+  const favOption = card.querySelector(".fav-option");
+  if (favOption) {
+    favOption.addEventListener("click", (e) => {
       e.stopPropagation();
-      // Lo spazio apre i preferiti per la TV
-      const isTV = true;
+      e.preventDefault();
       
-      if (isTV) {
-        // Per TV, sposta il focus al bottone favoriti
-        const favBtn = document.getElementById(favBtnId);
-        if (favBtn) {
-          favBtn.focus();
-        }
+      const isInPreferiti = favOption.getAttribute("data-is-fav") === "true";
+      const itemId = favOption.getAttribute("data-item-id");
+      
+      if (isInPreferiti) {
+        // Rimuovi dai preferiti
+        removePreferito(item);
+        favOption.innerHTML = '<i class="far fa-star"></i><span>Aggiungi</span>';
+        favOption.setAttribute("data-is-fav", "false");
+      } else {
+        // Aggiungi ai preferiti
+        addPreferito(item);
+        favOption.innerHTML = '<i class="fas fa-star"></i><span>Rimuovi</span>';
+        favOption.setAttribute("data-is-fav", "true");
       }
-    }
-  });
+      
+      // Aggiorna il contatore e altre sezioni
+      updatePreferitiCounter();
+      
+      if (document.getElementById("preferiti-section") && 
+          document.getElementById("preferiti-section").style.display === "block") {
+        loadPreferitiSection();
+      }
+      if (document.getElementById("preferiti")) {
+        loadPreferiti();
+      }
+    });
+  }
 
-  // Gestione del bottone favoriti
-  const favBtn = card.querySelector(".fav-btn");
-  favBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    togglePreferito(item, card, favBtn);
-  });
-
-  // Gestione tastiera per il bottone favoriti
-  favBtn.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-      e.preventDefault();
-      e.stopPropagation();
-      togglePreferito(item, card, favBtn);
-    } else if (e.key === "Escape" || e.key === "Backspace") {
-      // Torna alla card
-      e.preventDefault();
-      e.stopPropagation();
-      card.focus();
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowRight" || 
-               e.key === "ArrowUp" || e.key === "ArrowDown") {
-      // Navigazione con frecce - ritorna alla card
-      e.preventDefault();
-      e.stopPropagation();
-      card.focus();
-    }
-  });
-
-  if (isRemovable) {
-    const removeBtn = card.querySelector(".remove-btn");
-    removeBtn.addEventListener("click", (e) => {
+  // Gestione click sull'overlay RIMUOVI (solo per "Continua visione")
+  const removeOption = card.querySelector(".remove-option");
+  if (removeOption) {
+    removeOption.addEventListener("click", (e) => {
       e.stopPropagation();
       e.preventDefault();
+      
       const confirmDelete = confirm(`Vuoi rimuovere "${rawTitle}" dalla visione?`);
       if (confirmDelete) {
         cookieNames.forEach((storageKey) => {
@@ -190,6 +192,84 @@ function createCard(item, cookieNames = [], isRemovable = false) {
       }
     });
   }
+
+  // Gestione tastiera per l'overlay
+  card.addEventListener("keydown", (e) => {
+    const overlay = card.querySelector(".card-overlay-options");
+    if (overlay && overlay.style.display === "block") {
+      const options = Array.from(overlay.querySelectorAll(".overlay-option"));
+      const currentIndex = options.findIndex(opt => opt === document.activeElement);
+      
+      switch(e.key) {
+        case "ArrowRight":
+          e.preventDefault();
+          e.stopPropagation();
+          if (currentIndex < options.length - 1) {
+            options[currentIndex + 1].focus();
+          } else {
+            options[0].focus();
+          }
+          break;
+          
+        case "ArrowLeft":
+          e.preventDefault();
+          e.stopPropagation();
+          if (currentIndex > 0) {
+            options[currentIndex - 1].focus();
+          } else {
+            options[options.length - 1].focus();
+          }
+          break;
+          
+        case "Escape":
+        case "Backspace":
+          e.preventDefault();
+          e.stopPropagation();
+          card.focus();
+          break;
+          
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          e.stopPropagation();
+          if (document.activeElement.classList.contains("overlay-option")) {
+            document.activeElement.click();
+          }
+          break;
+          
+        case "ArrowUp":
+        case "ArrowDown":
+          // Torna alla navigazione principale
+          e.preventDefault();
+          e.stopPropagation();
+          card.focus();
+          break;
+      }
+    } else if (e.key === "Enter" || e.key === " ") {
+      // Se la card ha focus e non c'è overlay, mostra l'overlay
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const isTV = document.body.classList.contains('tv');
+      if (isTV) {
+        const overlay = card.querySelector(".card-overlay-options");
+        const imageWrapper = card.querySelector(".card-image-wrapper");
+        
+        imageWrapper.style.filter = "brightness(0.3)";
+        overlay.style.display = "block";
+        
+        setTimeout(() => {
+          const firstButton = overlay.querySelector(".overlay-option");
+          if (firstButton) {
+            firstButton.focus();
+          }
+        }, 100);
+      } else {
+        // Per dispositivi non-TV, comportamento normale
+        openPlayer(item);
+      }
+    }
+  });
 
   return card;
 }

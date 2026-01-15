@@ -14,9 +14,8 @@ const SECTIONS = {
 };
 
 const CORS_LIST = [
-  "cors-anywhere.com/",
   "corsproxy.io/",
-  "api.allorigins.win/raw?url=",
+  "https://api.codetabs.com/v1/proxy?quest=",
   ...CORS_PROXIES_REQUIRING_ENCODING,
 ];
 
@@ -661,6 +660,42 @@ window.addEventListener("DOMContentLoaded", async () => {
         // Imposta lo stato iniziale per la home
         history.replaceState({ section: 'home' }, '', window.location.pathname);
     }
+});
+
+// Aggiungi questa funzione per gestire la navigazione TV
+function handleTVNavigation(event) {
+  const isTV = document.body.classList.contains('tv');
+  if (!isTV) return;
+  
+  const activeElement = document.activeElement;
+  
+  // Se siamo in un overlay, gestisci la navigazione interna
+  if (activeElement.closest('.card-overlay-options')) {
+    return; // Lascia che card.js gestisca la navigazione interna
+  }
+  
+  // Se siamo su una card, gestisci con Enter
+  if (activeElement.classList.contains('card')) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      event.stopPropagation();
+      // Non fare nulla - l'overlay verrà mostrato da card.js
+      return;
+    }
+  }
+  
+  // Se premiamo Esc o Backspace nel player, torna indietro
+  if ((event.key === 'Escape' || event.key === 'Backspace') && 
+      document.getElementById("player").style.display === "block") {
+    event.preventDefault();
+    goBack();
+  }
+}
+
+// Aggiorna l'event listener in script.js
+document.addEventListener('keydown', function(e) {
+  handleRemoteNavigation(e);
+  handleTVNavigation(e); // Aggiungi questa linea
 });
 
 window.addEventListener("scroll", () => {

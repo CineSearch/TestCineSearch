@@ -1773,89 +1773,126 @@ footer {
     height: 320px;
   }
 }
+/* Stili per l'overlay delle card (TV) */
+.card-overlay-options {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.overlay-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  width: 80%;
+  max-width: 300px;
+}
+
+.overlay-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  background: linear-gradient(135deg, #2a09e5, #1a0566);
+  color: white;
+  border: none;
+  padding: 15px 25px;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.overlay-option:hover,
+.overlay-option:focus {
+  background: linear-gradient(135deg, #1a0566, #2a09e5);
+  transform: scale(1.05);
+  border-color: #fff;
+  box-shadow: 0 0 20px rgba(42, 9, 229, 0.7);
+  outline: none;
+}
+
+.overlay-option i {
+  font-size: 1.5rem;
+}
+
+.fav-option {
+  background: linear-gradient(135deg, #ffcc00, #e6b800);
+  color: #000;
+}
+
+.fav-option:hover,
+.fav-option:focus {
+  background: linear-gradient(135deg, #e6b800, #ffcc00);
+  box-shadow: 0 0 20px rgba(255, 204, 0, 0.7);
+}
+
+.remove-option {
+  background: linear-gradient(135deg, #e50914, #b20710);
+}
+
+.remove-option:hover,
+.remove-option:focus {
+  background: linear-gradient(135deg, #b20710, #e50914);
+  box-shadow: 0 0 20px rgba(229, 9, 20, 0.7);
+}
+
+/* Migliora la navigazione con tastiera per TV */
 .card:focus {
   outline: 3px solid #2a09e5;
   outline-offset: 3px;
-  transform: scale(1.05);
-  z-index: 20;
-  box-shadow: 0 0 20px rgba(42, 9, 229, 0.7);
+  z-index: 30;
 }
 
-.card:focus .card-title-overlay {
-  background: linear-gradient(to top, rgba(42, 9, 229, 0.8), transparent);
+/* Nascondi i bottoni interni della card quando è in overlay */
+.card .card-buttons {
+  display: none !important;
 }
 
-/* Stile per il bottone favoriti quando è in focus */
-.card .fav-btn:focus {
-  outline: 3px solid #ffcc00;
-  outline-offset: 2px;
-  background: #ffcc00;
-  color: #000;
-  transform: scale(1.2);
-  box-shadow: 0 0 15px rgba(255, 204, 0, 0.7);
+/* Mantieni i badge visibili */
+.card .resume-badge {
+  display: block !important;
+  z-index: 25;
 }
 
-/* Migliora la visibilità dei pulsanti quando la card è in focus */
-.card:focus .card-buttons button:not(.fav-btn) {
-  background-color: rgba(255, 255, 255, 0.9);
-  color: #000;
+/* Per dispositivi non-TV, nascondi l'overlay */
+body:not(.tv) .card-overlay-options {
+  display: none !important;
 }
 
-/* Stili specifici per TV */
-body.tv .card {
-  min-width: 240px;
+body:not(.tv) .card .card-buttons {
+  display: flex !important;
 }
 
-body.tv .fav-btn {
-  width: 40px;
-  height: 40px;
-  font-size: 1.4rem;
+/* Aggiungi un'animazione per il focus della card */
+.card {
+  transition: transform 0.3s ease, z-index 0.3s ease;
 }
 
-body.tv .card:focus {
+.card:focus {
   transform: scale(1.08);
+  z-index: 100;
+  box-shadow: 0 0 30px rgba(42, 9, 229, 0.5);
 }
 
-body.tv .video-js {
-  font-size: 1.2rem;
-}
-
-body.tv .video-js .vjs-control-bar {
-  height: 4.5em;
-  padding: 0 1.5em;
-}
-
-body.tv .video-js .vjs-big-play-button {
-  width: 90px;
-  height: 90px;
-  line-height: 84px;
-  font-size: 3.5em;
-}
-
-/* Migliora l'accessibilità per la navigazione TV */
-*:focus {
-  outline: 2px solid #2a09e5 !important;
-}
-
-/* Animazione per il focus su TV */
-@keyframes tv-focus-pulse {
-  0%, 100% {
-    box-shadow: 0 0 10px rgba(42, 9, 229, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 25px rgba(42, 9, 229, 0.8);
-  }
-}
-
-body.tv .card:focus,
-body.tv button:focus {
-  animation: tv-focus-pulse 2s infinite;
-}
-
-/* Stile per il bottone rimuovi in focus */
-.remove-btn:focus {
-  outline: 3px solid #e50914 !important;
-  background: #e50914 !important;
-  color: white !important;
+/* Migliora la navigazione con frecce nei caroselli */
+.carousel:focus-within .card:focus {
   transform: scale(1.1);
 }
