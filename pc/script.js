@@ -14,8 +14,9 @@ const SECTIONS = {
 };
 
 const CORS_LIST = [
+  "cors-anywhere.com/",
   "corsproxy.io/",
-  "https://api.codetabs.com/v1/proxy?quest=",
+  "api.allorigins.win/raw?url=",
   ...CORS_PROXIES_REQUIRING_ENCODING,
 ];
 
@@ -121,7 +122,7 @@ function saveToStorage(name, value, days) {
       created: new Date().getTime()
     };
     localStorage.setItem(name, JSON.stringify(data));
-    // console.log(`💾 localStorage salvato: ${name}=${value}`);
+    // // console.log(`💾 localStorage salvato: ${name}=${value}`);
     return true;
   } catch (e) {
     console.error("❌ Errore localStorage:", e);
@@ -135,11 +136,11 @@ function getFromStorage(name) {
     if (item) {
       const data = JSON.parse(item);
       if (!data.expires || data.expires > new Date().getTime()) {
-        // console.log(`📖 localStorage letto: ${name}=${data.value}`);
+        // // console.log(`📖 localStorage letto: ${name}=${data.value}`);
         return data.value;
       } else {
         localStorage.removeItem(name);
-        // console.log(`🗑️ Rimosso scaduto: ${name}`);
+        // // console.log(`🗑️ Rimosso scaduto: ${name}`);
       }
     }
   } catch (e) {
@@ -170,7 +171,7 @@ function cleanupExpiredStorage() {
     }
     
     if (removed > 0) {
-      // console.log(`🧹 Puliti ${removed} elementi scaduti`);
+      // // console.log(`🧹 Puliti ${removed} elementi scaduti`);
     }
   } catch (e) {
     console.error("❌ Errore pulizia storage:", e);
@@ -410,7 +411,7 @@ function goBackToCategories() {
 }
 
 function handlePopState(event) {
-    console.log('Popstate triggered', event.state);
+    // console.log('Popstate triggered', event.state);
     
     if (event.state && event.state.section) {
         const sectionId = event.state.section;
@@ -534,10 +535,10 @@ document.getElementById("search").addEventListener("keydown", (e) => {
 
 
 function debugCookies() {
-  // console.log("🔍 DEBUG - Tutti i cookie:");
+  // // console.log("🔍 DEBUG - Tutti i cookie:");
   const allCookies = document.cookie.split(";").map((c) => c.trim());
   allCookies.forEach(cookie => {
-    // console.log("🍪", cookie);
+    // // console.log("🍪", cookie);
   });
 }
 
@@ -573,12 +574,12 @@ function handleRemoteNavigation(event) {
 
 
 window.addEventListener("DOMContentLoaded", async () => {
-  // console.log("🚀 Pagina caricata");
+  // // console.log("🚀 Pagina caricata");
   
-  // console.log("💽 localStorage totale:", localStorage.length, "elementi");
+  // // console.log("💽 localStorage totale:", localStorage.length, "elementi");
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    // console.log(`  ${i}: ${key}`);
+    // // console.log(`  ${i}: ${key}`);
   }
       window.addEventListener('popstate', handlePopState);
       
@@ -660,42 +661,6 @@ window.addEventListener("DOMContentLoaded", async () => {
         // Imposta lo stato iniziale per la home
         history.replaceState({ section: 'home' }, '', window.location.pathname);
     }
-});
-
-// Aggiungi questa funzione per gestire la navigazione TV
-function handleTVNavigation(event) {
-  const isTV = document.body.classList.contains('tv');
-  if (!isTV) return;
-  
-  const activeElement = document.activeElement;
-  
-  // Se siamo in un overlay, gestisci la navigazione interna
-  if (activeElement.closest('.card-overlay-options')) {
-    return; // Lascia che card.js gestisca la navigazione interna
-  }
-  
-  // Se siamo su una card, gestisci con Enter
-  if (activeElement.classList.contains('card')) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      event.stopPropagation();
-      // Non fare nulla - l'overlay verrà mostrato da card.js
-      return;
-    }
-  }
-  
-  // Se premiamo Esc o Backspace nel player, torna indietro
-  if ((event.key === 'Escape' || event.key === 'Backspace') && 
-      document.getElementById("player").style.display === "block") {
-    event.preventDefault();
-    goBack();
-  }
-}
-
-// Aggiorna l'event listener in script.js
-document.addEventListener('keydown', function(e) {
-  handleRemoteNavigation(e);
-  handleTVNavigation(e); // Aggiungi questa linea
 });
 
 window.addEventListener("scroll", () => {
