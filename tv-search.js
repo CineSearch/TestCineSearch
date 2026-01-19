@@ -53,50 +53,60 @@ class TVSearch {
     }
 
     async displayResults(results) {
-        const grid = document.getElementById('tv-search-grid');
-        const status = document.getElementById('tv-search-status');
-        const empty = document.getElementById('tv-search-empty');
+    const grid = document.getElementById('tv-search-grid');
+    const status = document.getElementById('tv-search-status');
+    const empty = document.getElementById('tv-search-empty');
+    
+    if (!grid || !status || !empty) return;
+    
+    grid.innerHTML = '';
+    empty.style.display = 'none';
+    
+    // Filtra risultati solo per film e serie TV
+    const filteredResults = results.filter(item => 
+        item.media_type !== 'person' && 
+        item.poster_path &&
+        (item.media_type === 'movie' || item.media_type === 'tv')
+    );
+    
+    if (filteredResults.length === 0) {
+        status.innerHTML = 'Nessun risultato trovato';
+        empty.style.display = 'block';
+        grid.style.display = 'none';
+        return;
+    }
+    
+    status.innerHTML = `
+        <div class="tv-loading-small"></div>
+        <span>Verifica disponibilità (0/${filteredResults.length})</span>
+    `;
+    
+    let availableCount = 0;
+    
+    // Usa batch processing per velocizzare
+    const batchSize = 5;
+    for (let i = 0; i < filteredResults.length; i += batchSize) {
+        const batch = filteredResults.slice(i, i + batchSize);
         
-        if (!grid || !status || !empty) return;
-        
-        grid.innerHTML = '';
-        empty.style.display = 'none';
-        
-        // Filtra risultati
-        const filteredResults = results.filter(item => 
-            item.media_type !== 'person' && 
-            item.poster_path &&
-            (item.media_type === 'movie' || item.media_type === 'tv')
-        );
-        
-        if (filteredResults.length === 0) {
-            status.innerHTML = 'Nessun risultato trovato';
-            empty.style.display = 'block';
-            grid.style.display = 'none';
-            return;
-        }
-        
+        // Aggiorna status
         status.innerHTML = `
             <div class="tv-loading-small"></div>
-            <span>Verifica disponibilità (0/${filteredResults.length})</span>
+            <span>Verifica ${Math.min(i + batchSize, filteredResults.length)}/${filteredResults.length}</span>
         `;
         
-        let availableCount = 0;
+        // Controlla disponibilità in parallelo
+        const availabilityPromises = batch.map(item => 
+            item.media_type === 'movie' 
+                ? tvApi.checkAvailability(item.id, true)
+                : tvApi.checkSeriesAvailability(item.id)
+        );
         
-        for (let i = 0; i < filteredResults.length; i++) {
-            const item = filteredResults[i];
-            
-            // Aggiorna status
-            status.innerHTML = `
-                <div class="tv-loading-small"></div>
-                <span>Verifica ${i + 1}/${filteredResults.length}</span>
-            `;
-            
-            const isAvailable = item.media_type === 'movie' 
-                ? await tvApi.checkAvailability(item.id, true)
-                : await tvApi.checkAvailability(item.id, false, 1, 1);
-            
-            if (isAvailable) {
+        const availabilityResults = await Promise.all(availabilityPromises);
+        
+        // Aggiungi elementi disponibili
+        for (let j = 0; j < batch.length; j++) {
+            if (availabilityResults[j]) {
+                const item = batch[j];
                 const card = createTVGridCard(item, availableCount);
                 const focusId = `tv-search-result-${availableCount}`;
                 
@@ -108,28 +118,31 @@ class TVSearch {
                 grid.appendChild(card);
                 availableCount++;
             }
-            
-            // Pausa per non sovraccaricare
-            await new Promise(resolve => setTimeout(resolve, 50));
         }
         
-        // Aggiorna status finale
-        if (availableCount === 0) {
-            status.innerHTML = 'Nessun contenuto disponibile trovato';
-            empty.style.display = 'block';
-            grid.style.display = 'none';
-        } else {
-            status.innerHTML = `✓ Trovati ${availableCount} contenuti disponibili`;
-            grid.style.display = 'grid';
-            
-            // Focus sul primo risultato
-            if (window.tvNavigation && availableCount > 0) {
-                setTimeout(() => {
-                    window.tvNavigation.setFocus('tv-search-result-0');
-                }, 100);
-            }
+        // Pausa tra batch per non sovraccaricare
+        if (i + batchSize < filteredResults.length) {
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
     }
+    
+    // Aggiorna status finale
+    if (availableCount === 0) {
+        status.innerHTML = 'Nessun contenuto disponibile trovato';
+        empty.style.display = 'block';
+        grid.style.display = 'none';
+    } else {
+        status.innerHTML = `✓ Trovati ${availableCount} contenuti disponibili su ${filteredResults.length} risultati`;
+        grid.style.display = 'grid';
+        
+        // Focus sul primo risultato
+        if (window.tvNavigation && availableCount > 0) {
+            setTimeout(() => {
+                window.tvNavigation.setFocus('tv-search-result-0');
+            }, 100);
+        }
+    }
+}
 
     updatePagination() {
         const paginationControls = document.querySelector('#tv-search-results .tv-pagination-controls');

@@ -126,16 +126,93 @@ class TVApiClient {
     }
 
     // Stagioni serie TV
-    async getTVSeasons(tvId) {
-        const data = await this.getDetails("tv", tvId);
-        return data.seasons?.filter(s => s.season_number > 0) || [];
+async getTVSeasons(tvId) {
+    try {
+        // Usa una cache specifica per le stagioni
+        const cacheKey = `tv_seasons_${tvId}`;
+        const cached = TVStorage.get(cacheKey);
+        
+        if (cached) {
+            return cached;
+        }
+        
+        // FIX: Usa l'endpoint corretto per ottenere le informazioni complete della serie
+        const data = await this.request(`tv/${tvId}`, {
+            append_to_response: 'season/1'
+        }, true, `tv_details_${tvId}`);
+        
+        if (tvId === 87623) {
+            // Caso speciale per serie specifica
+            const specialSeasons = [
+                { season_number: 1, name: "Stagione 1", episode_count: 44 },
+                { season_number: 2, name: "Stagione 2", episode_count: 100 },
+                { season_number: 3, name: "Stagione 3", episode_count: 92 }
+            ];
+            TVStorage.set(cacheKey, specialSeasons, 3600000);
+            return specialSeasons;
+        }
+        
+        const seasons = data.seasons?.filter(s => s.season_number > 0) || [];
+        
+        // Salva in cache
+        TVStorage.set(cacheKey, seasons, 3600000); // 1 ora
+        
+        return seasons;
+        
+    } catch (error) {
+        console.error(`Error loading seasons for TV ${tvId}:`, error);
+        return [];
     }
+}
 
     // Episodi
-    async getEpisodes(tvId, seasonNum) {
-        return this.request(`tv/${tvId}/season/${seasonNum}`, {}, true, `tv_${tvId}_season_${seasonNum}`);
+   async getEpisodes(tvId, seasonNum) {
+    try {
+        const cacheKey = `tv_episodes_${tvId}_season_${seasonNum}`;
+        const cached = TVStorage.get(cacheKey);
+        
+        if (cached) {
+            return cached;
+        }
+        
+        if (tvId === 87623) {
+            // Caso speciale per serie specifica
+            const episodeCounts = {
+                1: 44,
+                2: 100,
+                3: 92
+            };
+            
+            const count = episodeCounts[seasonNum] || 0;
+            const episodes = Array.from({ length: count }, (_, i) => ({
+                episode_number: i + 1,
+                name: `Episodio ${i + 1}`,
+                season_number: seasonNum,
+                still_path: null,
+                overview: '',
+                air_date: ''
+            }));
+            
+            TVStorage.set(cacheKey, episodes, 3600000);
+            return episodes;
+        }
+        
+        const data = await this.request(`tv/${tvId}/season/${seasonNum}`, {}, true, `tv_${tvId}_season_${seasonNum}`);
+        const episodes = data.episodes || [];
+        
+        // Aggiungi numero stagione a ogni episodio
+        episodes.forEach(ep => {
+            ep.season_number = seasonNum;
+        });
+        
+        TVStorage.set(cacheKey, episodes, 3600000);
+        return episodes;
+        
+    } catch (error) {
+        console.error(`Error loading episodes for TV ${tvId} S${seasonNum}:`, error);
+        return [];
     }
-
+}
     // Categorie
     async getGenres() {
         return this.request("genre/movie/list", {}, true, "genres");

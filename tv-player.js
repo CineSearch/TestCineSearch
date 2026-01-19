@@ -396,13 +396,13 @@ class TVPlayer {
     this.player = videojs('tv-player-video', {
         controls: true,
         fluid: true,
+        autoplay: true, // AUTO PLAY ATTIVATO
         aspectRatio: '16:9',
         playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
         html5: {
             vhs: {
                 overrideNative: true,
                 limitRenditionByPlayerDimensions: false,
-                // Configurazione speciale per cifratura
                 handleManifestRedirects: true
             }
         },
@@ -430,33 +430,8 @@ class TVPlayer {
         }
     });
     
-    // Configurazione HLS avanzata
-    this.player.tech().on('usinghls', () => {
-        const hls = this.player.tech(true).hls;
-        
-        if (hls) {
-            // Aggiungi gestione errori specifica per HLS
-            hls.on('hlsError', (event, data) => {
-                console.error('HLS Error:', data);
-                
-                // Gestione specifica per errori di cifratura
-                if (data.details && data.details.includes('key')) {
-                    console.log('Errore chiave di cifratura, riprovo con proxy corretto...');
-                    this.fixEncryptionKeyRequest();
-                }
-            });
-        }
-    });
-    
-    // Aggiungi quality selector
-    this.player.ready(() => {
-        if (this.player.hlsQualitySelector) {
-            this.player.hlsQualitySelector();
-        }
-        
-        // Setup event listeners del player
-        this.setupPlayerEvents();
-    });
+    // Setup event listeners
+    this.setupPlayerEvents();
 }
 
 // Funzione per correggere le richieste di chiavi di cifratura
