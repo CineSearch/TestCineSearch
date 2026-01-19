@@ -1,391 +1,516 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     
-<script>
-function getDeviceType() {
-    const ua = navigator.userAgent.toLowerCase();
-
-    const isTV =
-        ua.includes("smarttv") ||
-        ua.includes("appletv") ||
-        ua.includes("googletv") ||
-        ua.includes("android tv") ||
-        ua.includes("fire tv") ||
-        ua.includes("aft") ||
-        /android.*(tv|set-top|box)/i.test(ua);
-
-    const isIOS =
-        ua.includes("iphone") ||
-        ua.includes("ipad") ||
-        ua.includes("ipod");
-
-    const isAndroid =
-        ua.includes("android") && !isTV;
-
-    if (isTV) return "tv";
-    if (isIOS) return "ios";
-    if (isAndroid) return "android";
-    return "desktop";
-}
-
-const device = getDeviceType();
-const path = window.location.pathname;
-
-if (device === "ios" && !path.includes("/mobileIOS/")) {
-    window.location.href = "mobileIOS/index.html";
-}
-else if (device === "android" && !path.includes("/mobile/")) {
-    window.location.href = "mobileAndroid/index.html";
-}
-// PC e TV → index.html (nessuna azione)
-</script>
-<script>
-  const isTV = /TV|SmartTV|WebOS|Tizen|Android TV|GoogleTV/i.test(navigator.userAgent);
-
-  if (isTV) {
-    document.body.classList.add('tv');
-  }
-</script>
+    <title>CineSearch TV</title>
     
+    <!-- Font Awesome per icone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
-
-    <title>CineSearch</title>
-
-    <link href="https://vjs.zencdn.net/8.16.1/video-js.css" rel="stylesheet" />
+    
+    <!-- Video.js per TV -->
+    <link href="https://vjs.zencdn.net/8.16.1/video-js.css" rel="stylesheet">
     <script src="https://vjs.zencdn.net/8.16.1/video.min.js"></script>
-
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.css"
-    />
+    
+    <!-- Video.js HLS Quality Selector -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.css">
     <script src="https://cdn.jsdelivr.net/npm/videojs-hls-quality-selector@2.0.0/dist/videojs-hls-quality-selector.min.js"></script>
     
-    <link rel="stylesheet" href="pc/style.css">
-  </head>
-  <body>
-    <header id="header">
-<div class="logo">
-  <i class="fas fa-film"></i>
-  <span>CineSearch</span>
-</div>
-      <div class="header-controls">
-        <div class="cors-selector">
-          <label class="cors-label" for="cors-select">🌐 CORS Proxy</label>
-          <select id="cors-select"></select>
+    <!-- Nostri stili -->
+    <link rel="stylesheet" href="tv-style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/svgs/solid/film.svg">
+</head>
+<body class="tv-mode">
+    <!-- Overlay di caricamento iniziale -->
+    <div id="loading-overlay" class="fullscreen-loading">
+        <div class="loading-tv">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Caricamento CineSearch TV...</div>
+            <div class="loading-subtext">Ottimizzato per Smart TV</div>
         </div>
-        <div class="search-container">
-          <input
-            type="text"
-            id="search"
-            placeholder="🔍 Cerca film, serie TV..."
-          />
+    </div>
+
+    <!-- Header fisso con controllo focus -->
+    <header id="tv-header" class="tv-header">
+        <div class="tv-logo" data-focus="logo" tabindex="0">
+            <i class="fas fa-tv"></i>
+            <span>CineSearch TV</span>
         </div>
-      </div>
-      <div class="preferiti-counter" onclick="showPreferiti()" style="cursor: pointer;">
-        <span class="fav-icon">⭐</span>
-        <span id="preferiti-count">0</span>
-      </div>
-    </header>
-    <main>
-      <div id="home">
-        <section class="hero">
-          <div class="hero-content">
-            <h1>Benvenuto su CineSearch</h1>
-            <p>La tua piattaforma per film e serie TV</p>
+        
+        <div class="tv-header-controls">
+            <!-- CORS Proxy Selector -->
+            <div class="tv-cors-selector" data-focus="cors">
+                <label for="tv-cors-select">🌐 Proxy</label>
+                <select id="tv-cors-select" tabindex="0"></select>
+            </div>
             
-            <div class="navigation-buttons" style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-              <button class="nav-btn" onclick="showAllMovies()">🎬 Tutti i Film</button>
-              <button class="nav-btn" onclick="showAllTV()">📺 Tutte le Serie TV</button>
-              <button class="nav-btn" onclick="showCategories()">🎭 Categorie</button>
-              <button class="nav-btn" onclick="showPreferiti()">⭐ Preferiti</button>
+            <!-- Barra di ricerca -->
+            <div class="tv-search-container" data-focus="search">
+                <input type="text" id="tv-search" 
+                       placeholder="🔍 Cerca film, serie TV..." 
+                       tabindex="0"
+                       aria-label="Cerca film o serie TV">
+                <button id="tv-search-btn" class="tv-search-btn" tabindex="0" aria-label="Avvia ricerca">
+                    <i class="fas fa-search"></i>
+                </button>
             </div>
-          </div>
-        </section>
-
-        <section id="continua-visione" style="display: none;">
-          <h2>▶️ Continua visione</h2>
-          <div class="carousel-wrapper">
-            <button class="arrow left" data-target="continua-carousel">◀</button>
-            <div class="carousel-container">
-              <div class="carousel" id="continua-carousel"></div>
+            
+            <!-- Contatore preferiti -->
+            <div class="tv-preferiti-counter" id="tv-preferiti-counter" 
+                 data-focus="preferiti" tabindex="0" 
+                 aria-label="Apri preferiti">
+                <i class="fas fa-star"></i>
+                <span id="tv-preferiti-count">0</span>
             </div>
-            <button class="arrow right" data-target="continua-carousel">▶</button>
-          </div>
-        </section>
-
-        <section id="preferiti" style="display: none;">
-          <h2>⭐ Preferiti</h2>
-          <div class="carousel-wrapper">
-            <button class="arrow left" data-target="preferiti-carousel">◀</button>
-            <div class="carousel-container">
-              <div class="carousel" id="preferiti-carousel"></div>
-            </div>
-            <button class="arrow right" data-target="preferiti-carousel">▶</button>
-          </div>
-        </section>
-
-        <section id="trending">
-          <h2>🔥 Trending</h2>
-          <div class="carousel-wrapper">
-            <button class="arrow left" data-target="trending-carousel">◀</button>
-            <div class="carousel-container">
-              <div class="carousel" id="trending-carousel"></div>
-            </div>
-            <button class="arrow right" data-target="trending-carousel">▶</button>
-          </div>
-        </section>
-
-        <section id="nowPlaying">
-          <h2>🎬 Ultimi Film</h2>
-          <div class="carousel-wrapper">
-            <button class="arrow left" data-target="nowPlaying-carousel">◀</button>
-            <div class="carousel-container">
-              <div class="carousel" id="nowPlaying-carousel"></div>
-            </div>
-            <button class="arrow right" data-target="nowPlaying-carousel">▶</button>
-          </div>
-        </section>
-
-        <section id="popularMovies">
-          <h2>⭐ Film Popolari</h2>
-          <div class="carousel-wrapper">
-            <button class="arrow left" data-target="popularMovies-carousel">◀</button>
-            <div class="carousel-container">
-              <div class="carousel" id="popularMovies-carousel"></div>
-            </div>
-            <button class="arrow right" data-target="popularMovies-carousel">▶</button>
-          </div>
-        </section>
-
-        <section id="onTheAir">
-          <h2>📺 Ultime Serie</h2>
-          <div class="carousel-wrapper">
-            <button class="arrow left" data-target="onTheAir-carousel">◀</button>
-            <div class="carousel-container">
-              <div class="carousel" id="onTheAir-carousel"></div>
-            </div>
-            <button class="arrow right" data-target="onTheAir-carousel">▶</button>
-          </div>
-        </section>
-
-        <section id="popularTV">
-          <h2>🏆 Serie Popolari</h2>
-          <div class="carousel-wrapper">
-            <button class="arrow left" data-target="popularTV-carousel">◀</button>
-            <div class="carousel-container">
-              <div class="carousel" id="popularTV-carousel"></div>
-            </div>
-            <button class="arrow right" data-target="popularTV-carousel">▶</button>
-          </div>
-        </section>
-      </div>
-
-      <!-- RISULTATI RICERCA - Modificato per usare griglia verticale -->
-      <section id="results" style="display: none;">
-        <div class="grid-header">
-          <button class="back-to-home" onclick="goBackToHome()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
-            ← Torna alla Home
-          </button>
-          <h2 id="results-title">Risultati ricerca</h2>
         </div>
-        <div class="availability-check" id="search-checking" style="margin: 0 4% 1rem;"></div>
-        <div class="vertical-grid" id="search-grid"></div>
-        <div class="no-results" id="search-no-results" style="display: none; grid-column: 1 / -1; text-align: center; padding: 3rem; margin: 0 4%;">
-          Nessun risultato disponibile trovato
-        </div>
-      </section>
+        
+        <!-- Indicatore focus visivo -->
+        <div class="focus-indicator" id="focus-indicator"></div>
+    </header>
 
-      <div id="player">
-        <div class="player-header">
-          <button class="back-btn" onclick="goBack()">← Torna indietro</button>
-        </div>
+    <!-- Barra di navigazione principale -->
+    <nav class="tv-nav" id="tv-nav">
+        <button class="tv-nav-btn active" data-focus="nav-home" tabindex="0" 
+                onclick="showHome()" aria-label="Home">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </button>
+        
+        <button class="tv-nav-btn" data-focus="nav-movies" tabindex="0"
+                onclick="showAllMovies()" aria-label="Tutti i film">
+            <i class="fas fa-film"></i>
+            <span>Film</span>
+        </button>
+        
+        <button class="tv-nav-btn" data-focus="nav-series" tabindex="0"
+                onclick="showAllTV()" aria-label="Tutte le serie TV">
+            <i class="fas fa-tv"></i>
+            <span>Serie TV</span>
+        </button>
+        
+        <button class="tv-nav-btn" data-focus="nav-categories" tabindex="0"
+                onclick="showCategories()" aria-label="Categorie">
+            <i class="fas fa-tags"></i>
+            <span>Categorie</span>
+        </button>
+        
+        <button class="tv-nav-btn" data-focus="nav-favorites" tabindex="0"
+                onclick="showPreferiti()" aria-label="Preferiti">
+            <i class="fas fa-star"></i>
+            <span>Preferiti</span>
+        </button>
+        
+        <button class="tv-nav-btn" data-focus="nav-continue" tabindex="0"
+                onclick="showContinuaVisione()" aria-label="Continua visione">
+            <i class="fas fa-play-circle"></i>
+            <span>Continua</span>
+        </button>
+    </nav>
 
-        <div class="player-info" id="player-info">
-          <h1 id="player-title"></h1>
-          <div class="meta" id="player-meta"></div>
-          <div class="overview" id="player-overview"></div>
-        </div>
-
-        <div class="player-content">
-          <div class="video-container">
-            <div
-              id="episode-warning"
-              class="select-episode-warning"
-              style="display: none"
-            >
-              <div class="icon">📺</div>
-              <h3>Seleziona un episodio</h3>
-              <p>
-                Scegli una stagione e un episodio dalla lista a destra per
-                iniziare la riproduzione
-              </p>
+    <!-- Contenuto principale -->
+    <main id="tv-main" class="tv-main">
+        <!-- HOME -->
+        <section id="tv-home" class="tv-section active">
+            <div class="tv-hero">
+                <h1 class="tv-hero-title">Benvenuto su CineSearch TV</h1>
+                <p class="tv-hero-subtitle">La tua piattaforma ottimizzata per Smart TV</p>
+                
+                <div class="tv-hero-grid">
+                    <div class="tv-hero-card" data-focus="hero-trending" tabindex="0" onclick="scrollToSection('tv-trending')">
+                        <i class="fas fa-fire"></i>
+                        <h3>🔥 Trending</h3>
+                        <p>I contenuti più popolari</p>
+                    </div>
+                    
+                    <div class="tv-hero-card" data-focus="hero-movies" tabindex="0" onclick="showAllMovies()">
+                        <i class="fas fa-film"></i>
+                        <h3>🎬 Ultimi Film</h3>
+                        <p>Nuove uscite</p>
+                    </div>
+                    
+                    <div class="tv-hero-card" data-focus="hero-series" tabindex="0" onclick="showAllTV()">
+                        <i class="fas fa-tv"></i>
+                        <h3>📺 Ultime Serie</h3>
+                        <p>Episodi recenti</p>
+                    </div>
+                    
+                    <div class="tv-hero-card" data-focus="hero-favorites" tabindex="0" onclick="showPreferiti()">
+                        <i class="fas fa-star"></i>
+                        <h3>⭐ Preferiti</h3>
+                        <p>I tuoi preferiti</p>
+                    </div>
+                </div>
             </div>
 
-            <video
-              id="player-video"
-              class="video-js vjs-theme-cinesearch vjs-big-play-centered"
-              controls
-              preload="auto"
-              playsinline
-              crossorigin="anonymous"
-            ></video>
+            <!-- Sezione CONTINUA VISIONE -->
+            <section id="tv-continua" class="tv-content-section">
+                <h2 class="tv-section-title">
+                    <i class="fas fa-play-circle"></i>
+                    Continua la visione
+                </h2>
+                <div class="tv-carousel-wrapper">
+                    <button class="tv-carousel-btn left" onclick="scrollCarousel('continua-carousel', -1)" 
+                            aria-label="Scorri a sinistra" tabindex="0">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="tv-carousel-container">
+                        <div class="tv-carousel" id="continua-carousel"></div>
+                    </div>
+                    <button class="tv-carousel-btn right" onclick="scrollCarousel('continua-carousel', 1)"
+                            aria-label="Scorri a destra" tabindex="0">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="tv-empty-state" id="continua-empty">
+                    <i class="fas fa-play-circle"></i>
+                    <p>Guarda un contenuto per almeno 1 minuto per vederlo qui</p>
+                </div>
+            </section>
 
-            <div
-              id="loading-overlay"
-              class="loading-overlay"
-              style="display: none"
-            >
-              <div class="loading"></div>
-              <div class="loading-text">Caricamento stream...</div>
+            <!-- Sezione TRENDING -->
+            <section id="tv-trending" class="tv-content-section">
+                <h2 class="tv-section-title">
+                    <i class="fas fa-fire"></i>
+                    Trending
+                </h2>
+                <div class="tv-carousel-wrapper">
+                    <button class="tv-carousel-btn left" onclick="scrollCarousel('trending-carousel', -1)"
+                            aria-label="Scorri a sinistra" tabindex="0">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="tv-carousel-container">
+                        <div class="tv-carousel" id="trending-carousel"></div>
+                    </div>
+                    <button class="tv-carousel-btn right" onclick="scrollCarousel('trending-carousel', 1)"
+                            aria-label="Scorri a destra" tabindex="0">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sezione FILM IN ONDA -->
+            <section id="tv-now-playing" class="tv-content-section">
+                <h2 class="tv-section-title">
+                    <i class="fas fa-film"></i>
+                    Film in onda
+                </h2>
+                <div class="tv-carousel-wrapper">
+                    <button class="tv-carousel-btn left" onclick="scrollCarousel('now-playing-carousel', -1)"
+                            aria-label="Scorri a sinistra" tabindex="0">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="tv-carousel-container">
+                        <div class="tv-carousel" id="now-playing-carousel"></div>
+                    </div>
+                    <button class="tv-carousel-btn right" onclick="scrollCarousel('now-playing-carousel', 1)"
+                            aria-label="Scorri a destra" tabindex="0">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Sezione SERIE TV IN ONDA -->
+            <section id="tv-on-air" class="tv-content-section">
+                <h2 class="tv-section-title">
+                    <i class="fas fa-tv"></i>
+                    Serie TV in onda
+                </h2>
+                <div class="tv-carousel-wrapper">
+                    <button class="tv-carousel-btn left" onclick="scrollCarousel('on-air-carousel', -1)"
+                            aria-label="Scorri a sinistra" tabindex="0">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="tv-carousel-container">
+                        <div class="tv-carousel" id="on-air-carousel"></div>
+                    </div>
+                    <button class="tv-carousel-btn right" onclick="scrollCarousel('on-air-carousel', 1)"
+                            aria-label="Scorri a destra" tabindex="0">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </section>
+        </section>
+
+        <!-- TUTTI I FILM -->
+        <section id="tv-all-movies" class="tv-section">
+            <div class="tv-grid-header">
+                <button class="tv-back-btn" onclick="showHome()" tabindex="0" aria-label="Torna alla home">
+                    <i class="fas fa-arrow-left"></i>
+                    Torna alla Home
+                </button>
+                <h2 class="tv-grid-title">
+                    <i class="fas fa-film"></i>
+                    Tutti i Film
+                </h2>
+                
+                <!-- Filtri -->
+                <div class="tv-filters">
+                    <div class="tv-year-filter">
+                        <label for="tv-movie-year-min">Anno da:</label>
+                        <input type="number" id="tv-movie-year-min" min="1888" max="2030" 
+                               placeholder="1888" tabindex="0">
+                        
+                        <label for="tv-movie-year-max">a:</label>
+                        <input type="number" id="tv-movie-year-max" min="1888" max="2030" 
+                               placeholder="2025" tabindex="0">
+                        
+                        <button class="tv-filter-btn" onclick="applyMovieYearFilter()" tabindex="0">
+                            Applica
+                        </button>
+                        <button class="tv-filter-btn reset" onclick="clearMovieYearFilter()" tabindex="0">
+                            Reset
+                        </button>
+                    </div>
+                </div>
             </div>
-          </div>
-          <div
-            class="episode-selector"
-            id="episode-selector"
-            style="display: none"
-          >
-            <h3>Seleziona episodio</h3>
-            <div class="season-selector">
-              <label>Stagione:</label>
-              <select id="season-select"></select>
+            
+            <div class="tv-pagination-info" id="tv-movie-pagination-info">
+                Caricamento film...
             </div>
-            <div class="episodes-list" id="episodes-list"></div>
-          </div>
-        </div>
-      </div>
+            
+            <div class="tv-vertical-grid" id="tv-all-movies-grid"></div>
+            
+            <div class="tv-pagination-controls">
+                <button class="tv-page-btn prev" onclick="prevMoviePage()" tabindex="0" disabled>
+                    <i class="fas fa-chevron-left"></i> Precedente
+                </button>
+                <span class="tv-page-info" id="tv-movie-page-info">Pagina 1</span>
+                <button class="tv-page-btn next" onclick="nextMoviePage()" tabindex="0">
+                    Successiva <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- TUTTE LE SERIE TV -->
+        <section id="tv-all-series" class="tv-section">
+            <div class="tv-grid-header">
+                <button class="tv-back-btn" onclick="showHome()" tabindex="0">
+                    <i class="fas fa-arrow-left"></i>
+                    Torna alla Home
+                </button>
+                <h2 class="tv-grid-title">
+                    <i class="fas fa-tv"></i>
+                    Tutte le Serie TV
+                </h2>
+                
+                <div class="tv-filters">
+                    <div class="tv-year-filter">
+                        <label for="tv-series-year-min">Anno da:</label>
+                        <input type="number" id="tv-series-year-min" min="1888" max="2030" 
+                               placeholder="1888" tabindex="0">
+                        
+                        <label for="tv-series-year-max">a:</label>
+                        <input type="number" id="tv-series-year-max" min="1888" max="2030" 
+                               placeholder="2025" tabindex="0">
+                        
+                        <button class="tv-filter-btn" onclick="applySeriesYearFilter()" tabindex="0">
+                            Applica
+                        </button>
+                        <button class="tv-filter-btn reset" onclick="clearSeriesYearFilter()" tabindex="0">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tv-pagination-info" id="tv-series-pagination-info">
+                Caricamento serie TV...
+            </div>
+            
+            <div class="tv-vertical-grid" id="tv-all-series-grid"></div>
+            
+            <div class="tv-pagination-controls">
+                <button class="tv-page-btn prev" onclick="prevSeriesPage()" tabindex="0" disabled>
+                    <i class="fas fa-chevron-left"></i> Precedente
+                </button>
+                <span class="tv-page-info" id="tv-series-page-info">Pagina 1</span>
+                <button class="tv-page-btn next" onclick="nextSeriesPage()" tabindex="0">
+                    Successiva <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- CATEGORIE -->
+        <section id="tv-categories" class="tv-section">
+            <div class="tv-grid-header">
+                <button class="tv-back-btn" onclick="showHome()" tabindex="0">
+                    <i class="fas fa-arrow-left"></i>
+                    Torna alla Home
+                </button>
+                <h2 class="tv-grid-title">
+                    <i class="fas fa-tags"></i>
+                    Categorie
+                </h2>
+            </div>
+            
+            <div class="tv-categories-grid" id="tv-categories-grid"></div>
+        </section>
+
+        <!-- PREFERITI -->
+        <section id="tv-preferiti" class="tv-section">
+            <div class="tv-grid-header">
+                <button class="tv-back-btn" onclick="showHome()" tabindex="0">
+                    <i class="fas fa-arrow-left"></i>
+                    Torna alla Home
+                </button>
+                <h2 class="tv-grid-title">
+                    <i class="fas fa-star"></i>
+                    I tuoi Preferiti
+                </h2>
+            </div>
+            
+            <div class="tv-vertical-grid" id="tv-preferiti-grid"></div>
+            
+            <div class="tv-empty-state" id="tv-preferiti-empty">
+                <i class="fas fa-star"></i>
+                <h3>Nessun preferito</h3>
+                <p>Aggiungi contenuti ai preferiti per vederlo qui</p>
+                <button class="tv-empty-btn" onclick="showAllMovies()" tabindex="0">
+                    Esplora Film
+                </button>
+            </div>
+        </section>
+
+        <!-- RISULTATI RICERCA -->
+        <section id="tv-search-results" class="tv-section">
+            <div class="tv-grid-header">
+                <button class="tv-back-btn" onclick="showHome()" tabindex="0">
+                    <i class="fas fa-arrow-left"></i>
+                    Torna alla Home
+                </button>
+                <h2 class="tv-grid-title" id="tv-search-title">
+                    <i class="fas fa-search"></i>
+                    Risultati ricerca
+                </h2>
+            </div>
+            
+            <div class="tv-search-status" id="tv-search-status">
+                <div class="tv-loading-small"></div>
+                <span>Verifica disponibilità...</span>
+            </div>
+            
+            <div class="tv-vertical-grid" id="tv-search-grid"></div>
+            
+            <div class="tv-empty-state" id="tv-search-empty">
+                <i class="fas fa-search"></i>
+                <h3>Nessun risultato</h3>
+                <p>Prova con un'altra ricerca</p>
+            </div>
+        </section>
+
+        <!-- PLAYER -->
+        <section id="tv-player" class="tv-section">
+            <div class="tv-player-header">
+                <button class="tv-back-btn" onclick="goBackFromPlayer()" tabindex="0" aria-label="Torna indietro">
+                    <i class="fas fa-arrow-left"></i>
+                    Torna Indietro
+                </button>
+                
+                <div class="tv-player-info">
+                    <h1 id="tv-player-title" class="tv-player-title">Titolo</h1>
+                    <div class="tv-player-meta" id="tv-player-meta">
+                        <span class="tv-meta-year">2024</span>
+                        <span class="tv-meta-rating">⭐ 8.5</span>
+                        <span class="tv-meta-type">Film</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tv-player-content">
+                <!-- Video container -->
+                <div class="tv-video-container">
+                    <div id="tv-episode-warning" class="tv-episode-warning">
+                        <i class="fas fa-tv"></i>
+                        <h3>Seleziona un episodio</h3>
+                        <p>Scegli una stagione e un episodio per iniziare</p>
+                    </div>
+                    
+                    <video id="tv-player-video" 
+                           class="video-js vjs-theme-cinesearch-tv vjs-big-play-centered"
+                           controls preload="auto" playsinline crossorigin="anonymous"
+                           tabindex="-1">
+                    </video>
+                    
+                    <div id="tv-loading-overlay" class="tv-loading-overlay">
+                        <div class="tv-loading-spinner"></div>
+                        <div class="tv-loading-text">Caricamento stream...</div>
+                    </div>
+                </div>
+                
+                <!-- Selezione episodi -->
+                <div class="tv-episode-selector" id="tv-episode-selector">
+                    <h3 class="tv-episode-title">
+                        <i class="fas fa-list"></i>
+                        Seleziona Episodio
+                    </h3>
+                    
+                    <div class="tv-season-selector">
+                        <label for="tv-season-select">Stagione:</label>
+                        <select id="tv-season-select" tabindex="0"></select>
+                    </div>
+                    
+                    <div class="tv-episodes-list" id="tv-episodes-list"></div>
+                </div>
+            </div>
+            
+            <!-- Controlli rapidi per TV -->
+            <div class="tv-quick-controls">
+                <button class="tv-quick-btn" onclick="playerSeek(-10)" tabindex="0" aria-label="Indietro 10 secondi">
+                    <i class="fas fa-backward"></i> 10s
+                </button>
+                <button class="tv-quick-btn" onclick="togglePlayPause()" tabindex="0" aria-label="Play/Pausa">
+                    <i class="fas fa-play"></i> Play/Pausa
+                </button>
+                <button class="tv-quick-btn" onclick="playerSeek(30)" tabindex="0" aria-label="Avanti 30 secondi">
+                    <i class="fas fa-forward"></i> 30s
+                </button>
+                <button class="tv-quick-btn" onclick="toggleFullscreen()" tabindex="0" aria-label="Schermo intero">
+                    <i class="fas fa-expand"></i> Fullscreen
+                </button>
+            </div>
+        </section>
     </main>
-<!-- TUTTI I FILM -->
-<section id="allMovies" style="display: none;">
-  <div class="grid-header">
-    <button class="back-to-home" onclick="goBackToHome()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
-      ← Torna alla Home
-    </button>
-    <h2>🎬 Tutti i Film</h2>
-    <div class="grid-controls">
-      <div class="year-filter" style="display: flex; align-items: center; gap: 10px;">
-        <label style="color: #fff;">Filtra per anno:</label>
-        <input type="number" id="movieMinYear" placeholder="Da" style="padding: 8px; width: 80px; border-radius: 4px; border: 1px solid #333;">
-        <span>-</span>
-        <input type="number" id="movieMaxYear" placeholder="A" style="padding: 8px; width: 80px; border-radius: 4px; border: 1px solid #333;">
-        <button onclick="applyMovieYearFilter()" style="background: #2a09e5; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-          Applica
-        </button>
-        <button onclick="clearMovieYearFilter()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-          Reset
-        </button>
-      </div>
-    </div>
-  </div>
-  <div class="pagination-info" id="movie-pagination-info" style="margin: 0 4% 1rem; color: #aaa;"></div>
-  <div class="vertical-grid" id="allMovies-grid"></div>
-  <div class="pagination-controls">
-    <button class="page-btn prev" onclick="prevMoviePage()" disabled>◀ Precedente</button>
-    <span class="page-info" id="movie-page-info">Pagina 1</span>
-    <button class="page-btn next" onclick="nextMoviePage()">Successiva ▶</button>
-  </div>
-</section>
 
-<!-- TUTTE LE SERIE TV -->
-<section id="allTV" style="display: none;">
-  <div class="grid-header">
-    <button class="back-to-home" onclick="goBackToHome()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
-      ← Torna alla Home
-    </button>
-    <h2>📺 Tutte le Serie TV</h2>
-    <div class="grid-controls">
-      <div class="year-filter" style="display: flex; align-items: center; gap: 10px;">
-        <label style="color: #fff;">Filtra per anno:</label>
-        <input type="number" id="tvMinYear" placeholder="Da" style="padding: 8px; width: 80px; border-radius: 4px; border: 1px solid #333;">
-        <span>-</span>
-        <input type="number" id="tvMaxYear" placeholder="A" style="padding: 8px; width: 80px; border-radius: 4px; border: 1px solid #333;">
-        <button onclick="applyTVYearFilter()" style="background: #2a09e5; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-          Applica
-        </button>
-        <button onclick="clearTVYearFilter()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-          Reset
-        </button>
-      </div>
-    </div>
-  </div>
-  <div class="pagination-info" id="tv-pagination-info" style="margin: 0 4% 1rem; color: #aaa;"></div>
-  <div class="vertical-grid" id="allTV-grid"></div>
-  <div class="pagination-controls">
-    <button class="page-btn prev" onclick="prevTVPage()" disabled>◀ Precedente</button>
-    <span class="page-info" id="tv-page-info">Pagina 1</span>
-    <button class="page-btn next" onclick="nextTVPage()">Successiva ▶</button>
-  </div>
-</section>
+    <!-- Footer per TV -->
+    <footer class="tv-footer">
+        <div class="tv-footer-content">
+            <div class="tv-footer-logo">
+                <i class="fas fa-tv"></i>
+                <span>CineSearch TV Edition</span>
+            </div>
+            
+            <div class="tv-footer-info">
+                <p>Ottimizzato per Smart TV & Telecomando</p>
+                <p class="tv-footer-help">
+                    <i class="fas fa-info-circle"></i>
+                    Usa i tasti direzionali per navigare, OK/Enter per selezionare
+                </p>
+            </div>
+            
+            <div class="tv-footer-copyright">
+                <p>© 2025 CineSearch TV | v2.0</p>
+            </div>
+        </div>
+    </footer>
 
-<!-- CATEGORIE -->
-<section id="categories" style="display: none;">
-  <div class="grid-header">
-    <button class="back-to-home" onclick="goBackToHome()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
-      ← Torna alla Home
-    </button>
-    <h2>🎭 Categorie</h2>
-  </div>
-  <div class="categories-grid" id="categories-grid"></div>
-</section>
+    <!-- Notifiche Toast -->
+    <div id="tv-toast" class="tv-toast"></div>
 
-<!-- RISULTATI CATEGORIA -->
-<section id="category-results" style="display: none;">
-  <div class="grid-header">
-    <button class="back-to-categories" onclick="goBackToCategories()" style="background: #2a09e5; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; cursor: pointer;">
-      ← Torna alle Categorie
-    </button>
-    <h2 id="category-results-title">Categoria</h2>
-    <div class="grid-controls">
-      <div class="year-filter" style="display: flex; align-items: center; gap: 10px;">
-        <label style="color: #fff;">Filtra per anno:</label>
-        <input type="number" id="minYear" placeholder="Da" style="padding: 8px; width: 80px; border-radius: 4px; border: 1px solid #333;">
-        <span>-</span>
-        <input type="number" id="maxYear" placeholder="A" style="padding: 8px; width: 80px; border-radius: 4px; border: 1px solid #333;">
-        <button onclick="applyYearFilter()" style="background: #2a09e5; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-          Applica
-        </button>
-        <button onclick="clearYearFilter()" style="background: #666; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-          Reset
-        </button>
-      </div>
-    </div>
-  </div>
-  <div class="pagination-info" id="category-pagination-info" style="margin: 0 4% 1rem; color: #aaa;"></div>
-  <div class="vertical-grid" id="category-grid"></div>
-  <div class="pagination-controls">
-    <button class="page-btn prev" onclick="prevCategoryPage()" disabled>◀ Precedente</button>
-    <span class="page-info" id="category-page-info">Pagina 1</span>
-    <button class="page-btn next" onclick="nextCategoryPage()">Successiva ▶</button>
-  </div>
-</section>
-<section id="preferiti-section" style="display: none;">
-  <h2>⭐ I tuoi Preferiti</h2>
-  <div class="carousel-wrapper">
-    <button class="arrow left" onclick="scrollCarouselPreferiti(-1)">◀</button>
-    <div class="carousel-container">
-      <div class="carousel" id="preferiti-section-carousel"></div>
-    </div>
-    <button class="arrow right" onclick="scrollCarouselPreferiti(1)">▶</button>
-  </div>
-  <div class="preferiti-message" id="preferiti-message" style="text-align: center; padding: 2rem; color: #888;">
-    Aggiungi contenuti ai preferiti per vederli qui
-  </div>
-</section>
-<script src="pc/script.js?v=00"></script>
-<script src="pc/api.js?v=00"></script>
-<script src="pc/cors.js?v=00"></script>
-<script src="pc/preferiti.js?v=00"></script>
-<script src="pc/continua-visione.js?v=00"></script>
-<script src="pc/card.js?v=00"></script>
-<script src="pc/categorie.js?v=00"></script>
-<script src="pc/film-serie.js?v=00"></script>
-<script src="pc/ricerca.js?v=00"></script>
-<script src="pc/player.js?v=00"></script>
-<footer style="text-align: center; padding: 2rem; color: #666; font-size: 0.9rem; border-top: 1px solid #333; margin-top: 3rem;">
-  <p>© 2025 Copyright AIMODS | Forked by cinesearch</p>
-</footer>
-  </body>
+    <!-- Scripts -->
+    <script src="tv-config.js"></script>
+    <script src="tv-api.js"></script>
+    <script src="tv-navigation.js"></script>
+    <script src="tv-card.js"></script>
+    <script src="tv-player.js"></script>
+    <script src="tv-favorites.js"></script>
+    <script src="tv-search.js"></script>
+    <script src="tv-continua.js"></script>
+    <script src="tv-categories.js"></script>
+    <script src="tv-init.js"></script>
+</body>
 </html>
