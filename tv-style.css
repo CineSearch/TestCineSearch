@@ -1,4 +1,4 @@
-/* Stili ottimizzati per Smart TV */
+/* Stili ottimizzati per Smart TV - TEMA BLU */
 * {
     margin: 0;
     padding: 0;
@@ -42,9 +42,9 @@ body.tv-mode {
 .loading-spinner {
     width: 80px;
     height: 80px;
-    border: 6px solid rgba(229, 9, 20, 0.3);
+    border: 6px solid rgba(42, 9, 229, 0.3);
     border-radius: 50%;
-    border-top-color: #e50914;
+    border-top-color: #2a09e5;
     animation: spin 1s linear infinite;
     margin: 0 auto 30px;
 }
@@ -85,7 +85,7 @@ body.tv-mode {
     justify-content: space-between;
     padding: 0 40px;
     z-index: 100;
-    border-bottom: 2px solid rgba(229, 9, 20, 0.3);
+    border-bottom: 2px solid rgba(42, 9, 229, 0.3);
     box-shadow: 0 4px 30px rgba(0,0,0,0.5);
 }
 
@@ -95,7 +95,7 @@ body.tv-mode {
     gap: 15px;
     font-size: 32px;
     font-weight: 700;
-    color: #e50914;
+    color: #2a09e5;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
     cursor: pointer;
     padding: 15px 25px;
@@ -105,8 +105,8 @@ body.tv-mode {
 
 .tv-logo:focus,
 .tv-logo.tv-focused {
-    background: rgba(229, 9, 20, 0.15);
-    outline: 3px solid #e50914;
+    background: rgba(42, 9, 229, 0.15);
+    outline: 3px solid #2a09e5;
     outline-offset: 5px;
     transform: scale(1.05);
 }
@@ -154,10 +154,10 @@ body.tv-mode {
 
 #tv-cors-select:focus,
 #tv-cors-select.tv-focused {
-    border-color: #e50914;
+    border-color: #2a09e5;
     background-color: rgba(255, 255, 255, 0.15);
     outline: none;
-    box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
+    box-shadow: 0 0 20px rgba(42, 9, 229, 0.4);
 }
 
 /* Barra di ricerca */
@@ -180,10 +180,10 @@ body.tv-mode {
 
 #tv-search:focus,
 #tv-search.tv-focused {
-    border-color: #e50914;
+    border-color: #2a09e5;
     background-color: rgba(255, 255, 255, 0.15);
     outline: none;
-    box-shadow: 0 0 20px rgba(229, 9, 20, 0.4);
+    box-shadow: 0 0 20px rgba(42, 9, 229, 0.4);
 }
 
 #tv-search::placeholder {
@@ -191,7 +191,7 @@ body.tv-mode {
 }
 
 .tv-search-btn {
-    background: linear-gradient(135deg, #e50914, #b20710);
+    background: linear-gradient(135deg, #2a09e5, #1a0566);
     border: none;
     border-radius: 10px;
     color: #fff;
@@ -207,11 +207,11 @@ body.tv-mode {
 
 .tv-search-btn:focus,
 .tv-search-btn.tv-focused {
-    background: linear-gradient(135deg, #ff0a16, #e50914);
+    background: linear-gradient(135deg, #3a19f5, #2a09e5);
     transform: scale(1.1);
     outline: 3px solid #fff;
     outline-offset: 3px;
-    box-shadow: 0 0 30px rgba(229, 9, 20, 0.6);
+    box-shadow: 0 0 30px rgba(42, 9, 229, 0.6);
 }
 
 /* Contatore preferiti */
@@ -250,13 +250,13 @@ body.tv-mode {
 /* Indicatore focus */
 .focus-indicator {
     position: absolute;
-    border: 4px solid #e50914;
+    border: 4px solid #2a09e5;
     border-radius: 12px;
     pointer-events: none;
     z-index: 99;
     transition: all 0.2s ease;
     opacity: 0;
-    box-shadow: 0 0 30px rgba(229, 9, 20, 0.7);
+    box-shadow: 0 0 30px rgba(42, 9, 229, 0.7);
 }
 
 /* Navigazione principale */
@@ -308,15 +308,15 @@ body.tv-mode {
 .tv-nav-btn:focus,
 .tv-nav-btn.tv-focused,
 .tv-nav-btn.active {
-    background: linear-gradient(135deg, #e50914, #b20710);
+    background: linear-gradient(135deg, #2a09e5, #1a0566);
     color: #fff;
     border-color: #fff;
     transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.4);
+    box-shadow: 0 10px 30px rgba(42, 9, 229, 0.4);
 }
 
 .tv-nav-btn.active {
-    background: linear-gradient(135deg, #b20710, #e50914);
+    background: linear-gradient(135deg, #1a0566, #2a09e5);
 }
 
 /* Contenuto principale */
@@ -351,9 +351,9 @@ body.tv-mode {
     text-align: center;
     margin-bottom: 60px;
     padding: 40px;
-    background: linear-gradient(135deg, rgba(229, 9, 20, 0.1), rgba(20, 20, 20, 0.8));
+    background: linear-gradient(135deg, rgba(42, 9, 229, 0.1), rgba(20, 20, 20, 0.8));
     border-radius: 20px;
-    border: 2px solid rgba(229, 9, 20, 0.3);
+    border: 2px solid rgba(42, 9, 229, 0.3);
 }
 
 .tv-hero-title {
@@ -390,17 +390,17 @@ body.tv-mode {
 
 .tv-hero-card:focus,
 .tv-hero-card.tv-focused {
-    background: rgba(229, 9, 20, 0.15);
-    border-color: #e50914;
+    background: rgba(42, 9, 229, 0.15);
+    border-color: #2a09e5;
     transform: scale(1.05);
-    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.3);
+    box-shadow: 0 10px 30px rgba(42, 9, 229, 0.3);
     outline: none;
 }
 
 .tv-hero-card i {
     font-size: 48px;
     margin-bottom: 20px;
-    color: #e50914;
+    color: #2a09e5;
 }
 
 .tv-hero-card h3 {
@@ -431,7 +431,7 @@ body.tv-mode {
 }
 
 .tv-section-title i {
-    color: #e50914;
+    color: #2a09e5;
     font-size: 40px;
 }
 
@@ -464,7 +464,7 @@ body.tv-mode {
 }
 
 .tv-carousel-btn {
-    background: rgba(229, 9, 20, 0.8);
+    background: rgba(42, 9, 229, 0.8);
     border: none;
     border-radius: 50%;
     width: 60px;
@@ -485,15 +485,15 @@ body.tv-mode {
 
 .tv-carousel-btn:focus,
 .tv-carousel-btn.tv-focused {
-    background: #e50914;
+    background: #2a09e5;
     transform: scale(1.2);
     outline: 3px solid #fff;
     outline-offset: 3px;
-    box-shadow: 0 0 30px rgba(229, 9, 20, 0.8);
+    box-shadow: 0 0 30px rgba(42, 9, 229, 0.8);
 }
 
 .tv-carousel-btn:hover:not(.tv-focused) {
-    background: rgba(229, 9, 20, 0.9);
+    background: rgba(42, 9, 229, 0.9);
     transform: scale(1.1);
 }
 
@@ -512,9 +512,9 @@ body.tv-mode {
 
 .tv-card:focus,
 .tv-card.tv-focused {
-    border-color: #e50914;
+    border-color: #2a09e5;
     transform: scale(1.08);
-    box-shadow: 0 20px 50px rgba(229, 9, 20, 0.4);
+    box-shadow: 0 20px 50px rgba(42, 9, 229, 0.4);
     z-index: 5;
     outline: none;
 }
@@ -579,7 +579,7 @@ body.tv-mode {
 
 .tv-card-btn:focus,
 .tv-card-btn.tv-focused {
-    background: rgba(229, 9, 20, 0.9);
+    background: rgba(42, 9, 229, 0.9);
     transform: scale(1.1);
     outline: none;
 }
@@ -598,7 +598,7 @@ body.tv-mode {
     position: absolute;
     top: 15px;
     right: 15px;
-    background: rgba(229, 9, 20, 0.9);
+    background: rgba(42, 9, 229, 0.9);
     color: #fff;
     padding: 8px 12px;
     border-radius: 8px;
@@ -629,7 +629,7 @@ body.tv-mode {
     display: inline-flex;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(135deg, #e50914, #b20710);
+    background: linear-gradient(135deg, #2a09e5, #1a0566);
     border: none;
     border-radius: 10px;
     color: #fff;
@@ -642,11 +642,11 @@ body.tv-mode {
 
 .tv-back-btn:focus,
 .tv-back-btn.tv-focused {
-    background: linear-gradient(135deg, #ff0a16, #e50914);
+    background: linear-gradient(135deg, #3a19f5, #2a09e5);
     transform: scale(1.05) translateX(-10px);
     outline: 3px solid #fff;
     outline-offset: 3px;
-    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.5);
+    box-shadow: 0 10px 30px rgba(42, 9, 229, 0.5);
 }
 
 .tv-grid-title {
@@ -661,7 +661,7 @@ body.tv-mode {
 
 .tv-grid-title i {
     font-size: 46px;
-    color: #e50914;
+    color: #2a09e5;
 }
 
 /* Filtri */
@@ -699,14 +699,14 @@ body.tv-mode {
 }
 
 .tv-year-filter input:focus {
-    border-color: #e50914;
+    border-color: #2a09e5;
     background: rgba(255, 255, 255, 0.15);
     outline: none;
-    box-shadow: 0 0 20px rgba(229, 9, 20, 0.3);
+    box-shadow: 0 0 20px rgba(42, 9, 229, 0.3);
 }
 
 .tv-filter-btn {
-    background: linear-gradient(135deg, #e50914, #b20710);
+    background: linear-gradient(135deg, #2a09e5, #1a0566);
     border: none;
     border-radius: 8px;
     color: #fff;
@@ -719,7 +719,7 @@ body.tv-mode {
 
 .tv-filter-btn:focus,
 .tv-filter-btn.tv-focused {
-    background: linear-gradient(135deg, #ff0a16, #e50914);
+    background: linear-gradient(135deg, #3a19f5, #2a09e5);
     transform: scale(1.05);
     outline: 3px solid #fff;
     outline-offset: 3px;
@@ -752,7 +752,7 @@ body.tv-mode {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: linear-gradient(135deg, #e50914, #b20710);
+    background: linear-gradient(135deg, #2a09e5, #1a0566);
     border: none;
     border-radius: 10px;
     color: #fff;
@@ -765,11 +765,11 @@ body.tv-mode {
 
 .tv-page-btn:focus,
 .tv-page-btn.tv-focused {
-    background: linear-gradient(135deg, #ff0a16, #e50914);
+    background: linear-gradient(135deg, #3a19f5, #2a09e5);
     transform: scale(1.05);
     outline: 3px solid #fff;
     outline-offset: 3px;
-    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.5);
+    box-shadow: 0 10px 30px rgba(42, 9, 229, 0.5);
 }
 
 .tv-page-btn:disabled {
@@ -831,7 +831,7 @@ body.tv-mode {
 }
 
 .tv-empty-btn {
-    background: linear-gradient(135deg, #e50914, #b20710);
+    background: linear-gradient(135deg, #2a09e5, #1a0566);
     border: none;
     border-radius: 10px;
     color: #fff;
@@ -843,7 +843,7 @@ body.tv-mode {
 
 .tv-empty-btn:focus,
 .tv-empty-btn.tv-focused {
-    background: linear-gradient(135deg, #ff0a16, #e50914);
+    background: linear-gradient(135deg, #3a19f5, #2a09e5);
     transform: scale(1.05);
     outline: 3px solid #fff;
     outline-offset: 3px;
@@ -924,7 +924,7 @@ body.tv-mode {
 
 .tv-episode-warning i {
     font-size: 80px;
-    color: #e50914;
+    color: #2a09e5;
     margin-bottom: 30px;
     animation: pulse 2s ease-in-out infinite;
 }
@@ -955,7 +955,7 @@ body.tv-mode {
 }
 
 .video-js.vjs-theme-cinesearch-tv .vjs-big-play-button {
-    background: rgba(229, 9, 20, 0.9);
+    background: rgba(42, 9, 229, 0.9);
     border: 4px solid #fff;
     border-radius: 50%;
     width: 100px;
@@ -969,9 +969,9 @@ body.tv-mode {
 }
 
 .video-js.vjs-theme-cinesearch-tv .vjs-big-play-button:focus {
-    background: #e50914;
+    background: #2a09e5;
     transform: translate(-50%, -50%) scale(1.1);
-    box-shadow: 0 0 50px rgba(229, 9, 20, 0.8);
+    box-shadow: 0 0 50px rgba(42, 9, 229, 0.8);
     outline: 3px solid #fff;
     outline-offset: 5px;
 }
@@ -985,11 +985,11 @@ body.tv-mode {
 }
 
 .video-js.vjs-theme-cinesearch-tv .vjs-play-progress {
-    background: #e50914;
+    background: #2a09e5;
 }
 
 .video-js.vjs-theme-cinesearch-tv .vjs-volume-level {
-    background: #e50914;
+    background: #2a09e5;
 }
 
 .video-js.vjs-theme-cinesearch-tv .vjs-menu-button .vjs-menu-content {
@@ -1018,9 +1018,9 @@ body.tv-mode {
 .tv-loading-spinner {
     width: 60px;
     height: 60px;
-    border: 5px solid rgba(229, 9, 20, 0.3);
+    border: 5px solid rgba(42, 9, 229, 0.3);
     border-radius: 50%;
-    border-top-color: #e50914;
+    border-top-color: #2a09e5;
     animation: spin 1s linear infinite;
     margin-bottom: 30px;
 }
@@ -1052,7 +1052,7 @@ body.tv-mode {
 }
 
 .tv-episode-title i {
-    color: #e50914;
+    color: #2a09e5;
     font-size: 30px;
 }
 
@@ -1081,10 +1081,10 @@ body.tv-mode {
 }
 
 #tv-season-select:focus {
-    border-color: #e50914;
+    border-color: #2a09e5;
     background: rgba(255, 255, 255, 0.15);
     outline: none;
-    box-shadow: 0 0 30px rgba(229, 9, 20, 0.3);
+    box-shadow: 0 0 30px rgba(42, 9, 229, 0.3);
 }
 
 .tv-episodes-list {
@@ -1092,7 +1092,7 @@ body.tv-mode {
     overflow-y: auto;
     padding-right: 10px;
     scrollbar-width: thin;
-    scrollbar-color: #e50914 rgba(255,255,255,0.05);
+    scrollbar-color: #2a09e5 rgba(255,255,255,0.05);
 }
 
 .tv-episodes-list::-webkit-scrollbar {
@@ -1105,7 +1105,7 @@ body.tv-mode {
 }
 
 .tv-episodes-list::-webkit-scrollbar-thumb {
-    background: #e50914;
+    background: #2a09e5;
     border-radius: 5px;
 }
 
@@ -1121,21 +1121,21 @@ body.tv-mode {
 
 .tv-episode-item:focus,
 .tv-episode-item.tv-focused {
-    background: rgba(229, 9, 20, 0.2);
-    border-color: #e50914;
+    background: rgba(42, 9, 229, 0.2);
+    border-color: #2a09e5;
     transform: scale(1.02);
     outline: none;
 }
 
 .tv-episode-item.active {
-    background: rgba(229, 9, 20, 0.3);
-    border-color: #e50914;
+    background: rgba(42, 9, 229, 0.3);
+    border-color: #2a09e5;
 }
 
 .tv-episode-number {
     font-size: 20px;
     font-weight: 600;
-    color: #e50914;
+    color: #2a09e5;
     margin-bottom: 8px;
 }
 
@@ -1174,12 +1174,12 @@ body.tv-mode {
 
 .tv-quick-btn:focus,
 .tv-quick-btn.tv-focused {
-    background: linear-gradient(135deg, #e50914, #b20710);
+    background: linear-gradient(135deg, #2a09e5, #1a0566);
     border-color: #fff;
     transform: scale(1.05);
     outline: 3px solid #fff;
     outline-offset: 3px;
-    box-shadow: 0 10px 30px rgba(229, 9, 20, 0.5);
+    box-shadow: 0 10px 30px rgba(42, 9, 229, 0.5);
 }
 
 /* Categorie */
@@ -1202,16 +1202,16 @@ body.tv-mode {
 
 .tv-category-card:focus,
 .tv-category-card.tv-focused {
-    border-color: #e50914;
+    border-color: #2a09e5;
     transform: scale(1.05);
-    box-shadow: 0 20px 50px rgba(229, 9, 20, 0.3);
+    box-shadow: 0 20px 50px rgba(42, 9, 229, 0.3);
     outline: none;
 }
 
 .tv-category-icon {
     font-size: 60px;
     margin-bottom: 25px;
-    color: #e50914;
+    color: #2a09e5;
 }
 
 .tv-category-name {
@@ -1237,9 +1237,9 @@ body.tv-mode {
 .tv-loading-small {
     width: 24px;
     height: 24px;
-    border: 3px solid rgba(229, 9, 20, 0.3);
+    border: 3px solid rgba(42, 9, 229, 0.3);
     border-radius: 50%;
-    border-top-color: #e50914;
+    border-top-color: #2a09e5;
     animation: spin 1s linear infinite;
 }
 
@@ -1252,7 +1252,7 @@ body.tv-mode {
     background: rgba(20, 20, 20, 0.95);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 2px solid rgba(229, 9, 20, 0.5);
+    border: 2px solid rgba(42, 9, 229, 0.5);
     border-radius: 16px;
     padding: 20px 40px;
     font-size: 24px;
@@ -1297,7 +1297,7 @@ body.tv-mode {
     margin-top: 60px;
     padding: 40px;
     background: rgba(20, 20, 20, 0.9);
-    border-top: 2px solid rgba(229, 9, 20, 0.3);
+    border-top: 2px solid rgba(42, 9, 229, 0.3);
 }
 
 .tv-footer-content {
@@ -1315,7 +1315,7 @@ body.tv-mode {
     gap: 15px;
     font-size: 24px;
     font-weight: 700;
-    color: #e50914;
+    color: #2a09e5;
 }
 
 .tv-footer-logo i {
@@ -1408,8 +1408,8 @@ body.tv-mode {
 }
 
 @keyframes focusPulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.7); }
-    50% { box-shadow: 0 0 0 20px rgba(229, 9, 20, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(42, 9, 229, 0.7); }
+    50% { box-shadow: 0 0 0 20px rgba(42, 9, 229, 0); }
 }
 
 /* Transizioni smooth */
@@ -1440,6 +1440,7 @@ body.tv-mode {
         min-height: 50px;
     }
 }
+
 /* Aggiungi a tv-style.css */
 .tv-empty-carousel {
     display: flex;
@@ -1466,4 +1467,35 @@ body.tv-mode {
 .tv-empty-carousel p {
     font-size: 22px;
     color: #aaa;
+}
+
+/* Custom Video.js Blue Theme */
+.vjs-theme-cinesearch-blue {
+    --vjs-theme-primary: #2a09e5;
+    --vjs-theme-secondary: #1a0566;
+}
+
+.vjs-theme-cinesearch-blue .vjs-play-progress {
+    background: var(--vjs-theme-primary);
+}
+
+.vjs-theme-cinesearch-blue .vjs-volume-level {
+    background: var(--vjs-theme-primary);
+}
+
+.vjs-theme-cinesearch-blue .vjs-big-play-button {
+    background: rgba(42, 9, 229, 0.9);
+    border-color: #fff;
+}
+
+.vjs-theme-cinesearch-blue .vjs-big-play-button:hover {
+    background: rgba(42, 9, 229, 1);
+}
+
+.vjs-theme-cinesearch-blue .vjs-slider:focus {
+    box-shadow: 0 0 0 2px rgba(42, 9, 229, 0.5);
+}
+
+.vjs-theme-cinesearch-blue .vjs-control-bar {
+    background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
 }

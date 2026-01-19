@@ -498,13 +498,49 @@ function showPreferiti() {
 }
 
 function showContinuaVisione() {
-    // Focus sulla sezione continua visione nella home
-    if (tvNavigation) {
-        tvNavigation.setFocus('hero-trending');
-    }
-    const continuaSection = document.getElementById('tv-continua');
-    if (continuaSection) {
-        continuaSection.scrollIntoView({ behavior: 'smooth' });
+    // Se non siamo nella home, prima torna alla home
+    if (TV_STATE.currentSection !== 'home') {
+        showHome();
+        
+        // Dopo un breve ritardo, fai scroll alla sezione continua
+        setTimeout(() => {
+            const continuaSection = document.getElementById('tv-continua');
+            if (continuaSection) {
+                continuaSection.scrollIntoView({ behavior: 'smooth' });
+                
+                // Focus sul primo elemento della sezione continua
+                setTimeout(() => {
+                    if (tvNavigation) {
+                        // Prova a focus sul primo elemento del carosello
+                        const firstCard = document.querySelector('#continua-carousel [data-focus]');
+                        if (firstCard) {
+                            tvNavigation.setFocus(firstCard.getAttribute('data-focus'));
+                        } else {
+                            // Fallback
+                            tvNavigation.setFocus('hero-trending');
+                        }
+                    }
+                }, 200);
+            }
+        }, 500); // Ritardo per permettere il caricamento della home
+    } else {
+        // Siamo già nella home, fai solo scroll
+        const continuaSection = document.getElementById('tv-continua');
+        if (continuaSection) {
+            continuaSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Focus sul primo elemento della sezione continua
+            setTimeout(() => {
+                if (tvNavigation) {
+                    const firstCard = document.querySelector('#continua-carousel [data-focus]');
+                    if (firstCard) {
+                        tvNavigation.setFocus(firstCard.getAttribute('data-focus'));
+                    } else {
+                        tvNavigation.setFocus('hero-trending');
+                    }
+                }
+            }, 200);
+        }
     }
 }
 
