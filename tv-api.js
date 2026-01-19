@@ -155,69 +155,103 @@ class TVApiClient {
 
     // Controlla disponibilità su Vixsrc (ottimizzato per TV)
     async checkAvailability(tmdbId, isMovie = true, season = null, episode = null) {
-        const cacheKey = `avail_${tmdbId}_${isMovie}_${season}_${episode}`;
-        const cached = TVStorage.get(cacheKey);
+    return new Promise((resolve) => {
+        const timeoutId = setTimeout(() => {
+            TVStorage.set(`avail_${tmdbId}_${isMovie}_${season}_${episode}`, false, 300000);
+            resolve(false);
+        }, TV_CONFIG.AVAILABILITY_TIMEOUT);
         
-        if (cached !== null) {
-            return cached;
-        }
-        
-        return new Promise((resolve) => {
-            const timeoutId = setTimeout(() => {
-                TVStorage.set(cacheKey, false, 300000); // 5 minuti cache negativa
-                resolve(false);
-            }, TV_CONFIG.AVAILABILITY_TIMEOUT);
-            
-            (async () => {
-                try {
-                    let vixsrcUrl;
-                    
-                    if (isMovie) {
-                        vixsrcUrl = `https://${TV_CONFIG.VIXSRC_URL}/movie/${tmdbId}`;
+        (async () => {
+            try {
+                let vixsrcUrl;
+                
+                if (isMovie) {
+                    vixsrcUrl = `https://${TV_CONFIG.VIXSRC_URL}/movie/${tmdbId}`;
+                } else {
+                    if (season === null || episode === null) {
+                        vixsrcUrl = `https://${TV_CONFIG.VIXSRC_URL}/tv/${tmdbId}/1/1`;
                     } else {
-                        if (season === null || episode === null) {
-                            vixsrcUrl = `https://${TV_CONFIG.VIXSRC_URL}/tv/${tmdbId}/1/1`;
-                        } else {
-                            vixsrcUrl = `https://${TV_CONFIG.VIXSRC_URL}/tv/${tmdbId}/${season}/${episode}`;
-                        }
+                        vixsrcUrl = `https://${TV_CONFIG.VIXSRC_URL}/tv/${tmdbId}/${season}/${episode}`;
                     }
-                    
-                    const proxiedUrl = applyCorsProxy(vixsrcUrl);
-                    const controller = new AbortController();
-                    const fetchTimeoutId = setTimeout(() => controller.abort(), 5000);
-                    
-                    const response = await fetch(proxiedUrl, {
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(fetchTimeoutId);
-                    
-                    if (response.status === 404) {
-                        TVStorage.set(cacheKey, false, 300000);
-                        resolve(false);
-                        return;
-                    }
-                    
-                    const html = await response.text();
-                    const hasPlaylist = /window\.masterPlaylist/.test(html);
-                    const notFound = /not found|not available|no sources found|error 404/i.test(html);
-                    
-                    const isAvailable = hasPlaylist && !notFound;
-                    TVStorage.set(cacheKey, isAvailable, isAvailable ? 3600000 : 300000);
-                    
-                    clearTimeout(timeoutId);
-                    resolve(isAvailable);
-                    
-                } catch (error) {
-                    console.error("Availability check error:", error);
-                    TVStorage.set(cacheKey, false, 60000); // 1 minuto per errori
+                }
+                
+                const proxiedUrl = applyCorsProxy(vixsrcUrl);
+                const controller = new AbortController();
+                const fetchTimeoutId = setTimeout(() => controller.abort(), 3000);
+                
+                const response = await fetch(proxiedUrl, {
+                    signal: controller.signal
+                });
+                
+                clearTimeout(fetchTimeoutId);
+                
+                if (response.status === 404) {
+                    TVStorage.set(`avail_${tmdbId}_${isMovie}_${season}_${episode}`, false, 300000);
                     clearTimeout(timeoutId);
                     resolve(false);
+                    return;
                 }
-            })();
-        });
-    }
+                
+                const html = await response.text();
+                const hasPlaylist = /window\.masterPlaylist/.test(html);
+                const notFound = /not found|not available|no sources found|error 404/i.test(html);
+                
+                const isAvailable = hasPlaylist && !notFound;
+                TVStorage.set(`avail_${tmdbId}_${isMovie}_${season}_${episode}`, isAvailable, 
+                             isAvailable ? 3600000 : 300000);
+                
+                clearTimeout(timeoutId);
+                resolve(isAvailable);
+                
+            } catch (error) {
+                console.error("Availability check error:", error);
+                TVStorage.set(`avail_${tmdbId}_${isMovie}_${season}_${episode}`, false, 60000);
+                clearTimeout(timeoutId);
+                resolve(false);
+            }
+        })();
+    });
+}
 
+// Aggiungi metodo per serie TV
+async checkSeriesAvailability(tmdbId) {
+    return this.checkAvailability(tmdbId, false, 1, 1);
+}
+
+// Modifica loadWithAvailability per filtrare meglio
+async loadWithAvailability(endpoint, limit = TV_CONFIG.CAROUSEL_ITEMS) {
+    try {
+        const data = await this.request(endpoint);
+        const availableItems = [];
+        
+        // Usa Promise.all per velocizzare i controlli
+        const availabilityChecks = data.results.slice(0, 30).map(async (item, index) => {
+            const mediaType = item.media_type || (item.title ? "movie" : "tv");
+            const isAvailable = await this.checkAvailability(item.id, mediaType === "movie");
+            
+            if (isAvailable) {
+                item.media_type = mediaType;
+                return item;
+            }
+            return null;
+        });
+        
+        const results = await Promise.all(availabilityChecks);
+        
+        // Filtra risultati e limita
+        for (const result of results) {
+            if (result && availableItems.length < limit) {
+                availableItems.push(result);
+            }
+        }
+        
+        return availableItems;
+        
+    } catch (error) {
+        console.error(`Error loading ${endpoint}:`, error);
+        return [];
+    }
+}
     // Stream diretto da Vixsrc
     async getStream(tmdbId, isMovie = true, season = null, episode = null) {
         try {

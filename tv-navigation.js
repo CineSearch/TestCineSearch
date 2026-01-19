@@ -518,10 +518,10 @@ function goBackFromPlayer() {
 
 // Carica contenuti home
 async function loadHomeContent() {
-    showLoading(true, "Caricamento contenuti...");
+    showLoading(true, "Caricamento contenuti disponibili...");
     
     try {
-        // Carica contenuti in parallelo
+        // Carica contenuti filtrando solo quelli disponibili
         const [
             trending,
             nowPlaying,
@@ -560,6 +560,9 @@ async function loadHomeContent() {
         // Aggiorna preferiti counter
         updatePreferitiCounter();
         
+        // Se nessun contenuto disponibile, mostra messaggio
+        this.checkEmptySections();
+        
         showLoading(false);
         
     } catch (error) {
@@ -567,6 +570,29 @@ async function loadHomeContent() {
         showToast("Errore nel caricamento dei contenuti", "error");
         showLoading(false);
     }
+}
+
+// Aggiungi funzione per verificare sezioni vuote
+function checkEmptySections() {
+    const sections = [
+        'trending-carousel',
+        'now-playing-carousel',
+        'popular-movies-carousel',
+        'on-air-carousel',
+        'popular-tv-carousel'
+    ];
+    
+    sections.forEach(sectionId => {
+        const carousel = document.getElementById(sectionId);
+        if (carousel && carousel.children.length === 0) {
+            carousel.innerHTML = `
+                <div class="tv-empty-carousel">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <p>Nessun contenuto disponibile</p>
+                </div>
+            `;
+        }
+    });
 }
 
 // Funzioni helper

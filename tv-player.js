@@ -494,41 +494,54 @@ fixEncryptionKeyRequest() {
     }
 
     async loadStream(item, season = null, episode = null) {
-        try {
-            this.showLoading(true, 'Caricamento stream...');
-            
-            const isMovie = item.media_type === 'movie';
-            const streamData = await tvApi.getStream(item.id, isMovie, season, episode);
-            
-            if (!streamData || !streamData.m3u8Url) {
-                throw new Error('Stream non disponibile');
-            }
-            
-            // Imposta sorgente
-            if (this.player) {
-                this.player.src({
-                    src: streamData.m3u8Url,
-                    type: 'application/x-mpegURL'
-                });
-                
-                // Riprendi da dove avevi lasciato
-                this.resumeFromProgress(item, season, episode);
-                
-                // Riproduci
-                this.player.play().catch(e => {
-                    console.log('Autoplay prevented:', e);
-                    // L'utente dovrà premere play manualmente
-                });
-            }
-            
-            this.showLoading(false);
-            
-        } catch (error) {
-            console.error('Error loading stream:', error);
-            this.showError('Impossibile caricare lo stream');
-            this.showLoading(false);
+    try {
+        this.showLoading(true, 'Caricamento stream...');
+        
+        const isMovie = item.media_type === 'movie';
+        const streamData = await tvApi.getStream(item.id, isMovie, season, episode);
+        
+        if (!streamData || !streamData.m3u8Url) {
+            throw new Error('Stream non disponibile');
         }
+        
+        // Imposta sorgente
+        if (this.player) {
+            this.player.src({
+                src: streamData.m3u8Url,
+                type: 'application/x-mpegURL'
+            });
+            
+            // Riprendi da dove avevi lasciato
+            this.resumeFromProgress(item, season, episode);
+            
+            // AUTO PLAY E FULL SCREEN
+            this.player.ready(() => {
+                setTimeout(() => {
+                    // Riproduci automaticamente
+                    this.player.play().catch(e => {
+                        console.log('Autoplay fallito, utente deve premere play:', e);
+                    });
+                    
+                    // Full screen automatico con ritardo per caricamento
+                    setTimeout(() => {
+                        if (!this.player.isFullscreen()) {
+                            this.player.requestFullscreen().catch(e => {
+                                console.log('Full screen automatico non supportato:', e);
+                            });
+                        }
+                    }, 1500); // Ritardo per caricamento video
+                }, 500);
+            });
+        }
+        
+        this.showLoading(false);
+        
+    } catch (error) {
+        console.error('Error loading stream:', error);
+        this.showError('Impossibile caricare lo stream');
+        this.showLoading(false);
     }
+}
 
     trackProgress() {
         if (!this.player || !this.currentItem) return;

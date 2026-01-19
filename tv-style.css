@@ -1440,3 +1440,30 @@ body.tv-mode {
         min-height: 50px;
     }
 }
+/* Aggiungi a tv-style.css */
+.tv-empty-carousel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 400px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 16px;
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    color: #888;
+    font-size: 24px;
+    text-align: center;
+    padding: 40px;
+}
+
+.tv-empty-carousel i {
+    font-size: 60px;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.tv-empty-carousel p {
+    font-size: 22px;
+    color: #aaa;
+}
