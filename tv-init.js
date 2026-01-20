@@ -115,6 +115,24 @@ function setupTVEventListeners() {
             handleTVResize();
         }, 250);
     });
+
+    const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+            // Se sono state aggiunte nuove card, refresh la navigazione
+            setTimeout(() => {
+                if (tvNavigation && TV_STATE.currentSection === 'home') {
+                    tvNavigation.refreshNavigationMap();
+                }
+            }, 500);
+        }
+    });
+});
+
+// Osserva i caroselli
+document.querySelectorAll('.tv-carousel').forEach(carousel => {
+    observer.observe(carousel, { childList: true });
+});
 }
 
 function setupTVResponsive() {

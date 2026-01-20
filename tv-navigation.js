@@ -5,6 +5,7 @@ class TVNavigation {
         this.focusHistory = [];
         this.sectionHistory = ['home'];
         this.navMap = new Map();
+        this.scrollDirection = 'vertical'; 
         this.init();
     }
 
@@ -107,8 +108,23 @@ class TVNavigation {
         }
     }
 
-    navigate(direction) {
+avigate(direction) {
         if (!this.currentFocus) return false;
+        
+        // Controlla se siamo in un carosello
+        const currentElement = this.navMap.get(this.currentFocus);
+        const isInGrid = currentElement && currentElement.closest('.tv-vertical-grid');
+        const isInCarousel = currentElement && currentElement.closest('.tv-carousel');
+        
+        // Per griglie verticali, navigazione su/giù tra elementi
+        if (isInGrid && (direction === 'up' || direction === 'down')) {
+            return this.navigateGrid(direction);
+        }
+        
+        // Per caroselli orizzontali, navigazione sinistra/destra
+        if (isInCarousel && (direction === 'left' || direction === 'right')) {
+            return this.navigateCarousel(direction);
+        }
         
         const mappings = this.getNavigationMappings();
         const current = this.currentFocus;
@@ -121,8 +137,8 @@ class TVNavigation {
             }
         }
         
-        // Navigazione di fallback
-        return this.fallbackNavigation(direction);
+        // Navigazione di fallback per Web2App
+        return this.fallbackNavigationWeb2App(direction);
     }
 
     getNavigationMappings() {
@@ -142,13 +158,79 @@ class TVNavigation {
             'preferiti': { left: 'cors', up: 'search' },
             
             // Hero section
-            'hero-trending': { up: 'nav-home', right: 'hero-movies', down: 'trending-carousel-0' },
-            'hero-movies': { left: 'hero-trending', right: 'hero-series', down: 'tv-movie-grid-0' },
-            'hero-series': { left: 'hero-movies', right: 'hero-favorites', down: 'tv-series-grid-0' },
-            'hero-favorites': { left: 'hero-series', down: 'tv-favorite-0' }
+'hero-trending': { 
+            up: 'nav-home', 
+            right: 'hero-movies', 
+            down: 'trending-0'  // PRIMA CARD DEL TRENDING
+        },
+        'hero-movies': { 
+            left: 'hero-trending', 
+            right: 'hero-series', 
+            down: 'now-playing-0'  // PRIMA CARD DI NOW PLAYING
+        },
+        'hero-series': { 
+            left: 'hero-movies', 
+            right: 'hero-favorites', 
+            down: 'popular-tv-0'  // PRIMA CARD DI POPULAR TV
+        },
+        'hero-favorites': { 
+            left: 'hero-series', 
+            down: 'preferiti-carousel-0' 
+        },
+
+                'trending-0': { 
+            up: 'hero-trending', 
+            right: 'trending-1',
+            down: 'now-playing-0'
+        },
+        'now-playing-0': { 
+            up: 'hero-movies', 
+            right: 'now-playing-1',
+            down: 'popular-movies-0'
+        }
+
+            
         };
     }
+enerateCarouselMappings(carouselId, itemCount) {
+    const mappings = {};
+    const prefix = carouselId.replace('-carousel', '');
+    
+    for (let i = 0; i < itemCount; i++) {
+        const focusId = `${prefix}-${i}`;
+        const prevId = i > 0 ? `${prefix}-${i-1}` : null;
+        const nextId = i < itemCount - 1 ? `${prefix}-${i+1}` : null;
+        
+        mappings[focusId] = {
+            left: prevId,
+            right: nextId,
+            up: this.getUpTarget(focusId),
+            down: this.getDownTarget(focusId)
+        };
+    }
+    
+    return mappings;
+}
 
+getUpTarget(focusId) {
+    // Logica per determinare dove andare quando premi SU
+    if (focusId.startsWith('trending-')) return 'hero-trending';
+    if (focusId.startsWith('now-playing-')) return 'hero-movies';
+    if (focusId.startsWith('popular-movies-')) return 'hero-movies';
+    if (focusId.startsWith('on-air-')) return 'hero-series';
+    if (focusId.startsWith('popular-tv-')) return 'hero-series';
+    return null;
+}
+
+getDownTarget(focusId) {
+    // Logica per determinare dove andare quando premi GIÙ
+    if (focusId.startsWith('trending-')) return 'now-playing-0';
+    if (focusId.startsWith('now-playing-')) return 'popular-movies-0';
+    if (focusId.startsWith('popular-movies-')) return 'on-air-0';
+    if (focusId.startsWith('on-air-')) return 'popular-tv-0';
+    if (focusId.startsWith('popular-tv-')) return 'hero-favorites';
+    return null;
+}
     fallbackNavigation(direction) {
         const allFocusIds = Array.from(this.navMap.keys());
         const currentIndex = allFocusIds.indexOf(this.currentFocus);
@@ -414,23 +496,50 @@ class TVNavigation {
 
     // Aggiungi elementi dinamici (per caroselli, griglie, ecc.)
     addDynamicFocusElement(element, focusId) {
-        if (this.navMap.has(focusId)) {
-            console.warn(`Focus ID already exists: ${focusId}`);
-            return;
-        }
-        
-        element.setAttribute('data-focus', focusId);
-        element.setAttribute('tabindex', '0');
-        element.setAttribute('role', 'button');
-        
-        this.navMap.set(focusId, element);
-        
-        element.addEventListener('focus', () => this.onElementFocus(element, focusId));
-        element.addEventListener('blur', () => this.onElementBlur(element));
-        element.addEventListener('mouseenter', () => this.setFocus(focusId));
-        element.addEventListener('click', () => this.setFocus(focusId));
+    // Se l'elemento esiste già, rimuovilo prima
+    if (this.navMap.has(focusId)) {
+        console.warn(`Focus ID already exists: ${focusId} - Replacing...`);
+        this.removeFocusElement(focusId);
     }
+    
+    // Assicurati che l'elemento abbia tutti gli attributi necessari
+    element.setAttribute('data-focus', focusId);
+    element.setAttribute('tabindex', '0');
+    element.setAttribute('role', 'button');
+    
+    // Aggiungi alla mappa
+    this.navMap.set(focusId, element);
+    
+    // Event listeners per focus
+    element.addEventListener('focus', () => this.onElementFocus(element, focusId));
+    element.addEventListener('blur', () => this.onElementBlur(element));
+    element.addEventListener('mouseenter', () => this.setFocus(focusId));
+    element.addEventListener('click', () => this.setFocus(focusId));
+    
+    // Per debug
+    if (TV_CONFIG.debug) {
+        console.log(`Added dynamic focus element: ${focusId}`);
+    }
+}
 
+refreshNavigationMap() {
+    // Pulisci e ricostruisci la mappa
+    this.navMap.clear();
+    this.collectFocusableElements();
+    
+    // Reimposta il focus corrente se esiste ancora
+    if (this.currentFocus && this.navMap.has(this.currentFocus)) {
+        this.setFocus(this.currentFocus);
+    } else if (this.navMap.size > 0) {
+        // Fallback al primo elemento disponibile
+        const firstKey = Array.from(this.navMap.keys())[0];
+        this.setFocus(firstKey);
+    }
+    
+    if (TV_CONFIG.debug) {
+        console.log(`Navigation map refreshed. Total elements: ${this.navMap.size}`);
+    }
+}
     // Rimuovi elementi dinamici
     removeFocusElement(focusId) {
         if (this.navMap.has(focusId)) {
@@ -571,7 +680,13 @@ async function loadHomeContent() {
             tvApi.loadWithAvailability(TV_CONFIG.ENDPOINTS.onTheAir),
             tvApi.loadWithAvailability(TV_CONFIG.ENDPOINTS.popularTV)
         ]);
+                if (trending.status === 'fulfilled') {
+            updateCarousel('trending-carousel', trending.value);
+        }
         
+        if (nowPlaying.status === 'fulfilled') {
+            updateCarousel('now-playing-carousel', nowPlaying.value);
+        }
         // Aggiorna le sezioni
         if (trending.status === 'fulfilled') {
             updateCarousel('trending-carousel', trending.value);
@@ -600,6 +715,18 @@ async function loadHomeContent() {
         this.checkEmptySections();
         
         showLoading(false);
+        
+        // IMPORTANTE: Refresh della navigazione dopo che tutto è caricato
+        setTimeout(() => {
+            if (tvNavigation) {
+                tvNavigation.refreshNavigationMap();
+                
+                // Imposta focus su hero-trending se disponibile
+                if (tvNavigation.navMap.has('hero-trending')) {
+                    tvNavigation.setFocus('hero-trending');
+                }
+            }
+        }, 500);
         
     } catch (error) {
         console.error("Error loading home content:", error);
@@ -645,15 +772,27 @@ function updateCarousel(carouselId, items) {
     
     items.forEach((item, index) => {
         const card = createTVCard(item, [], false);
-        const focusId = `${carouselId}-${index}`;
-        card.setAttribute('data-focus', focusId);
+        const focusId = `${carouselId.replace('-carousel', '')}-${index}`;
         
+        // IMPORTANTE: Assicurati che data-focus sia impostato correttamente
+        card.setAttribute('data-focus', focusId);
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        
+        // Aggiungi l'elemento alla mappa di navigazione
         if (tvNavigation) {
             tvNavigation.addDynamicFocusElement(card, focusId);
         }
         
         carousel.appendChild(card);
     });
+    
+    // Force refresh della navigazione dopo l'aggiornamento del carosello
+    if (tvNavigation) {
+        setTimeout(() => {
+            tvNavigation.collectFocusableElements();
+        }, 100);
+    }
 }
 
 // Esponi al global scope
