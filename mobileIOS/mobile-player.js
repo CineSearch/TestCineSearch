@@ -236,7 +236,7 @@ mobilePlayer.ready(() => {
     
     // Inizializza quality selector SOLO se disponibil
     }
-});
+);
         
         // Monitora lo stato del caricamento
         mobilePlayer.on('loadstart', () => {
