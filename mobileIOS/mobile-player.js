@@ -149,26 +149,18 @@ async function playItemMobile(id, type, season = null, episode = null) {
                 nativeVideoTracks: false,
                 nativeTextTracks: false
             },
-       controlBar: {
-        volumePanel: {
-          inline: false
-        },
-        children: [
-          "playToggle",
-          "volumePanel",
-          "currentTimeDisplay",
-          "timeDivider",
-          "durationDisplay",
-          "progressControl", // ASSICURATI CHE SIA PRESENTE
-          "remainingTimeDisplay",
-          "playbackRateMenuButton",
-          "chaptersButton",
-          "descriptionsButton",
-          "subsCapsButton",
-          "audioTrackButton",
-          //"qualitySelector",
-          "fullscreenToggle",
-        ],
+            controlBar: {
+                children: [
+                    'playToggle',
+                    'volumePanel',
+                    'currentTimeDisplay',
+                    'timeDivider',
+                    'durationDisplay',
+                    'progressControl',
+                    'remainingTimeDisplay',
+                    'playbackRateMenuButton',
+                    'fullscreenToggle',
+                ],
             },
             liveui: false,
             enableSourceset: true,
@@ -231,12 +223,22 @@ async function playItemMobile(id, type, season = null, episode = null) {
                     break;
             }
         });
-mobilePlayer.ready(() => {
-    showMobileLoading(false);
-    
-    // Inizializza quality selector SOLO se disponibil
-    }
-);
+        
+        mobilePlayer.ready(() => {
+            showMobileLoading(false);
+            // console.log('✅ Player ready su iOS');
+            
+            // Riproduci automaticamente (iOS potrebbe bloccare)
+            const playPromise = mobilePlayer.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    // console.log('📱 iOS - Auto-play bloccato, richiede interazione utente');
+                    // Mostra messaggio informativo
+                    showMobileInfo('Tocca il video per avviare la riproduzione');
+                });
+            }
+        });
         
         // Monitora lo stato del caricamento
         mobilePlayer.on('loadstart', () => {
@@ -263,6 +265,41 @@ mobilePlayer.ready(() => {
         console.error('📱 iOS - Errore riproduzione mobile:', error);
         showMobileLoading(false);
         showMobileError(`Impossibile riprodurre: ${error.message}`);
+    }
+}
+function initQualitySelectorPlugin() {
+    try {
+        // Controlla se il plugin esiste come oggetto globale
+        if (typeof window.videojsHlsQualitySelector !== 'undefined') {
+            // Registra solo se non è già registrato
+            if (typeof videojs.getPlugin('hlsQualitySelector') === 'undefined') {
+                videojs.registerPlugin('hlsQualitySelector', window.videojsHlsQualitySelector);
+                // console.log('✅ Plugin qualità registrato');
+            }
+            
+            // Applica il plugin
+            mobilePlayer.hlsQualitySelector({
+                displayCurrentQuality: true,
+                placementIndex: 7
+            });
+            // console.log('✅ Plugin qualità inizializzato');
+            return true;
+        }
+        
+        // Se il plugin è già registrato globalmente
+        if (typeof videojs.getPlugin('hlsQualitySelector') !== 'undefined') {
+            mobilePlayer.hlsQualitySelector({
+                displayCurrentQuality: true
+            });
+            // console.log('✅ Plugin qualità già attivo');
+            return true;
+        }
+        
+        console.warn('⚠️ Plugin qualità non trovato');
+        return false;
+    } catch (error) {
+        console.error('Errore inizializzazione plugin qualità:', error);
+        return false;
     }
 }
 
@@ -356,6 +393,9 @@ function extractAvailableQualities() {
                 });
                 
                 // console.log('Qualità estratte:', availableQualities);
+                
+                // Aggiorna il dropdown
+                updateQualitySelector();
                 
                 // Se ci sono qualità, informa anche il plugin
                 if (availableQualities.length > 0) {
