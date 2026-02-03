@@ -166,7 +166,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
           "descriptionsButton",
           "subsCapsButton",
           "audioTrackButton",
-          "qualitySelector",
+          //"qualitySelector",
           "fullscreenToggle",
         ],
             },
@@ -233,6 +233,15 @@ async function playItemMobile(id, type, season = null, episode = null) {
         });
 mobilePlayer.ready(() => {
     showMobileLoading(false);
+    
+    // Inizializza quality selector SOLO se disponibile
+    if (typeof mobilePlayer.hlsQualitySelector === 'function') {
+        try {
+            mobilePlayer.hlsQualitySelector();
+        } catch (e) {
+            console.warn('Plugin quality selector non disponibile:', e);
+        }
+    }
 });
         
         // Monitora lo stato del caricamento
