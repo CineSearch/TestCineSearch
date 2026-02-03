@@ -231,22 +231,18 @@ async function playItemMobile(id, type, season = null, episode = null) {
                     break;
             }
         });
-        mobilePlayer.hlsQualitySelector();
-        mobilePlayer.ready(() => {
-            showMobileLoading(false);
-            // console.log('✅ Player ready su iOS');
-            
-            // Riproduci automaticamente (iOS potrebbe bloccare)
-            const playPromise = mobilePlayer.play();
-            
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    // console.log('📱 iOS - Auto-play bloccato, richiede interazione utente');
-                    // Mostra messaggio informativo
-                    showMobileInfo('Tocca il video per avviare la riproduzione');
-                });
-            }
-        });
+mobilePlayer.ready(() => {
+    showMobileLoading(false);
+    
+    // Inizializza quality selector SOLO se disponibile
+    if (typeof mobilePlayer.hlsQualitySelector === 'function') {
+        try {
+            mobilePlayer.hlsQualitySelector();
+        } catch (e) {
+            console.warn('Plugin quality selector non disponibile:', e);
+        }
+    }
+});
         
         // Monitora lo stato del caricamento
         mobilePlayer.on('loadstart', () => {
