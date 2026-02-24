@@ -1,7 +1,12 @@
 {
-  "version": "1.5",
+  "version": "1.6",
   "releaseNotes": [
-    "TEST"
+    "Card più grandi per maggiore visibilità",
+    "Inserimento anno di uscita film /serietv sulla card",
+    "Filtro per anno cambiata icona",
+    "Ricerca a griglia",
+    "Una volta completata la visione di un film, questo viene eliminato dalla lista “Continua a guardare\"",
+    "Fix ricerca per Google TV"
   ],
   "updateUrl": "https://github.com/CineSearch/TestCineSearch/releases/download/TestRelease/CineSearchTV-release.apk"
 }
