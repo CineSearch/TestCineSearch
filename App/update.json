@@ -1,7 +1,7 @@
 {
-  "version": "1.1",
+  "version": "1.5",
   "releaseNotes": [
-"Test aggiornamento"
+    "TEST"
   ],
-  "updateUrl": "https://github.com/CineSearch/CineSearch/releases/download/Release/CineSearchTV.apk"
+  "updateUrl": "https://github.com/CineSearch/TestCineSearch/releases/download/TestRelease/CineSearchTV-release.apk"
 }
