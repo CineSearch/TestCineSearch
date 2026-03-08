@@ -8,6 +8,7 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
+let requestHookInstalled = false; // <-- AGGIUNTA (mancava nell'originale)
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -126,11 +127,11 @@ async function playItemMobile(id, type, season = null, episode = null) {
         
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
+
+        //const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
+        const isSafari = true;
         
-        // Determina se siamo su Safari
-        // const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
-        
-        // Configurazione specifica per iOS
+        // Configurazione specifica per iOS (MODIFICATA: overrideNative = true)
         const playerOptions = {
             controls: true,
             fluid: true,
@@ -138,7 +139,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: !isSafari, // Non sovrascrivere su Safari
+                    overrideNative: true, // <-- FORZA VHS ANCHE SU SAFARI
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
@@ -184,42 +185,12 @@ async function playItemMobile(id, type, season = null, episode = null) {
             });
         });
         
-        // --- MODIFICA: SU SAFARI USA HLS.js INVECE DEL PLAYER NATIVO ---
-        if (isSafari && typeof Hls !== 'undefined' && Hls.isSupported()) {
-            console.log('📱 Safari con HLS.js per supporto HEVC in TS');
-            
-            // Quando il player è pronto, sostituiamo la gestione HLS
-            mobilePlayer.ready(function() {
-                const videoEl = document.getElementById('mobile-player-video');
-                
-                // Crea istanza HLS.js
-                const hls = new Hls({
-                    enableWorker: true,
-                    lowLatencyMode: true,
-                    backBufferLength: 90
-                });
-                
-                // Carica la sorgente
-                hls.loadSource(m3u8Url);
-                hls.attachMedia(videoEl);
-                
-                // Gestisci errori
-                hls.on(Hls.Events.ERROR, function(event, data) {
-                    console.error('HLS.js error:', data);
-                });
-                
-                // Salva riferimento per cleanup
-                window.currentHls = hls;
-            });
-        } else {
-            // Per browser non Safari, usa la configurazione standard
-            mobilePlayer.src({
-                src: m3u8Url,
-                type: 'application/x-mpegURL',
-                withCredentials: false
-            });
-        }
-        // ----------------------------------------------------------------
+        // Imposta la sorgente
+        mobilePlayer.src({
+            src: m3u8Url,
+            type: 'application/x-mpegURL',
+            withCredentials: false
+        });
         
         // Gestione errori dettagliata
         mobilePlayer.on('error', function (e) {
