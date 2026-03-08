@@ -8,6 +8,14 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
+let requestHookInstalled = false; // <-- AGGIUNTA (mancava nell'originale)
+
+// ============ FUNZIONE UTILITY PER RILEVARE SAFARI ============
+function isSafari() {
+    const ua = navigator.userAgent.toLowerCase();
+    return (ua.indexOf('safari') !== -1 && ua.indexOf('chrome') === -1 && ua.indexOf('crios') === -1);
+}
+// ============================================================
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -126,11 +134,11 @@ async function playItemMobile(id, type, season = null, episode = null) {
         
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
-
-        //const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
-        const isSafari = videojs.browser.IS_SAFARI;
         
-        // Configurazione specifica per iOS (MODIFICATA: overrideNative = true)
+        // Determina se siamo su Safari usando la funzione manuale
+        const safariDetected = isSafari();
+        
+        // Configurazione specifica per iOS (MODIFICATA: usa la funzione manuale)
         const playerOptions = {
             controls: true,
             fluid: true,
@@ -138,7 +146,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: true, // <-- FORZA VHS ANCHE SU SAFARI
+                    overrideNative: !safariDetected, // Usa il check manuale
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
