@@ -9,6 +9,32 @@ let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
 
+// ============ UTILITY DI RILEVAMENTO CODEC (SOLO LOG, NON BLOCCANTE) ============
+function checkHEVCSupport() {
+    var video = document.createElement('video');
+    return !!(video.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"') || 
+              video.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"'));
+}
+
+async function logVideoCodec(m3u8Url) {
+    try {
+        const response = await fetch(applyCorsProxy(m3u8Url));
+        const playlist = await response.text();
+        const codecMatch = playlist.match(/CODECS="([^"]+)"/i);
+        if (codecMatch) {
+            const codecs = codecMatch[1].toLowerCase();
+            if (codecs.includes('hvc1') || codecs.includes('hev1')) {
+                console.log('Stream HEVC rilevato. Safari richiede fMP4. Se non riproduce, è il formato del server.');
+                showMobileInfo('Stream in HEVC. Se non vedi il video, il server deve usare fMP4, non TS.');
+            } else if (codecs.includes('avc1')) {
+                console.log('Stream H.264 rilevato, compatibilità garantita.');
+            }
+        }
+    } catch (e) {
+        console.warn('Impossibile analizzare playlist per codec:', e);
+    }
+}
+
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
     // console.log("Apertura player per:", item);
@@ -123,6 +149,10 @@ async function playItemMobile(id, type, season = null, episode = null) {
         } catch (e) {
             console.warn('M3U8 potrebbe non essere accessibile:', e.message);
         }
+        
+        // --- LOG CODEC (non blocca) ---
+        logVideoCodec(m3u8Url);
+        // ------------------------------
         
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
