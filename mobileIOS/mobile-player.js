@@ -8,7 +8,6 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
-let requestHookInstalled = false; // <-- AGGIUNTA (mancava nell'originale)
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -129,7 +128,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         setupVideoJsXhrHook();
 
         //const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
-        const isSafari = true;
+        const isSafari = videojs.browser.IS_SAFARI;
         
         // Configurazione specifica per iOS (MODIFICATA: overrideNative = true)
         const playerOptions = {
