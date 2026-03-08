@@ -8,7 +8,40 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
-let requestHookInstalled = false;
+let requestHookInstalled = true; // <-- AGGIUNTA (mancava nell'originale)
+
+// ============ UTILITY DI RILEVAMENTO CODEC ============
+function checkHEVCSupport() {
+    // Crea un elemento video virtuale per il test
+    var video = document.createElement('video');
+    // Stringhe di test per i codec HEVC (sono necessari parametri specifici)
+    // 'hev1' e 'hvc1' sono i due modi di identificare HEVC nelle mp4
+    var isHevcSupported = video.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"') || 
+                          video.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"');
+    // canPlayType() può tornare "probably", "maybe", o una stringa vuota.
+    // Se torna una stringa non vuota, c'è una possibilità di supporto.
+    return !!isHevcSupported;
+}
+
+async function isStreamHEVC(m3u8Url) {
+    try {
+        const response = await fetch(applyCorsProxy(m3u8Url));
+        const playlist = await response.text();
+        // Cerca la linea con gli attributi della variante (EXT-X-STREAM-INF)
+        // e al suo interno la stringa CODECS="..."
+        const codecMatch = playlist.match(/CODECS="([^"]+)"/i);
+        if (!codecMatch) {
+            // Non abbiamo info sui codec, assumiamo che non sia HEVC per sicurezza
+            return false;
+        }
+        const codecs = codecMatch[1].toLowerCase();
+        // Verifica se nei codec è presente 'hvc1' o 'hev1' (identificativi HEVC)
+        return codecs.includes('hvc1') || codecs.includes('hev1');
+    } catch (error) {
+        console.warn('Impossibile analizzare la playlist per i codec:', error);
+        return false; // In caso di errore, procedi (tanto il player nativo darà errore)
+    }
+}
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -124,6 +157,26 @@ async function playItemMobile(id, type, season = null, episode = null) {
         } catch (e) {
             console.warn('M3U8 potrebbe non essere accessibile:', e.message);
         }
+        
+        // --- NUOVA LOGICA DI CONTROLLO CODEC ---
+        const hevcSupported = checkHEVCSupport();
+        const streamIsHevc = await isStreamHEVC(m3u8Url);
+
+        if (streamIsHevc && !hevcSupported) {
+            // CASO CRITICO: Stream HEVC su browser che non lo supporta
+            showMobileError('Questo video utilizza il codec HEVC (H.265) che non è supportato sul tuo dispositivo. Prova con un dispositivo più recente (iPhone 7 o successivo).');
+            showMobileLoading(false);
+            return; // Interrompe il tentativo di riproduzione
+        }
+
+        if (streamIsHevc && hevcSupported) {
+            // Stream HEVC su browser che DICHIARA di supportarlo. Procedi, ma con un avviso.
+            console.log('Stream HEVC rilevato. Il browser dichiara supporto, ma la riproduzione dipende dall\'hardware.');
+            // Mostra un messaggio informativo non bloccante
+            showMobileInfo('Stream in HEVC rilevato. Se la riproduzione non dovesse funzionare, prova con un dispositivo più recente.');
+        }
+        // Se non siamo nel caso critico, procedi normalmente.
+        // --- FINE LOGICA DI CONTROLLO ---
         
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
