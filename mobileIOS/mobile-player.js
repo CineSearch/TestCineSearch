@@ -128,7 +128,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         setupVideoJsXhrHook();
         
         // Determina se siamo su Safari
-        const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
+        // const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
         
         // Configurazione specifica per iOS
         const playerOptions = {
