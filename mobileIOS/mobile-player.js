@@ -9,32 +9,6 @@ let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
 
-// ============ UTILITY DI RILEVAMENTO CODEC (SOLO LOG, NON BLOCCANTE) ============
-function checkHEVCSupport() {
-    var video = document.createElement('video');
-    return !!(video.canPlayType('video/mp4; codecs="hev1.1.6.L93.B0"') || 
-              video.canPlayType('video/mp4; codecs="hvc1.1.6.L93.B0"'));
-}
-
-async function logVideoCodec(m3u8Url) {
-    try {
-        const response = await fetch(applyCorsProxy(m3u8Url));
-        const playlist = await response.text();
-        const codecMatch = playlist.match(/CODECS="([^"]+)"/i);
-        if (codecMatch) {
-            const codecs = codecMatch[1].toLowerCase();
-            if (codecs.includes('hvc1') || codecs.includes('hev1')) {
-                console.log('Stream HEVC rilevato. Safari richiede fMP4. Se non riproduce, è il formato del server.');
-                showMobileInfo('Stream in HEVC. Se non vedi il video, il server deve usare fMP4, non TS.');
-            } else if (codecs.includes('avc1')) {
-                console.log('Stream H.264 rilevato, compatibilità garantita.');
-            }
-        }
-    } catch (e) {
-        console.warn('Impossibile analizzare playlist per codec:', e);
-    }
-}
-
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
     // console.log("Apertura player per:", item);
@@ -150,12 +124,11 @@ async function playItemMobile(id, type, season = null, episode = null) {
             console.warn('M3U8 potrebbe non essere accessibile:', e.message);
         }
         
-        // --- LOG CODEC (non blocca) ---
-        logVideoCodec(m3u8Url);
-        // ------------------------------
-        
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
+        
+        // Determina se siamo su Safari
+        const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
         
         // Configurazione specifica per iOS
         const playerOptions = {
@@ -165,7 +138,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: !videojs.browser.IS_SAFARI, // Non sovrascrivere su Safari
+                    overrideNative: !isSafari, // Non sovrascrivere su Safari
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
@@ -211,12 +184,42 @@ async function playItemMobile(id, type, season = null, episode = null) {
             });
         });
         
-        // Imposta la sorgente
-        mobilePlayer.src({
-            src: m3u8Url,
-            type: 'application/x-mpegURL',
-            withCredentials: false
-        });
+        // --- MODIFICA: SU SAFARI USA HLS.js INVECE DEL PLAYER NATIVO ---
+        if (isSafari && typeof Hls !== 'undefined' && Hls.isSupported()) {
+            console.log('📱 Safari con HLS.js per supporto HEVC in TS');
+            
+            // Quando il player è pronto, sostituiamo la gestione HLS
+            mobilePlayer.ready(function() {
+                const videoEl = document.getElementById('mobile-player-video');
+                
+                // Crea istanza HLS.js
+                const hls = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                    backBufferLength: 90
+                });
+                
+                // Carica la sorgente
+                hls.loadSource(m3u8Url);
+                hls.attachMedia(videoEl);
+                
+                // Gestisci errori
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    console.error('HLS.js error:', data);
+                });
+                
+                // Salva riferimento per cleanup
+                window.currentHls = hls;
+            });
+        } else {
+            // Per browser non Safari, usa la configurazione standard
+            mobilePlayer.src({
+                src: m3u8Url,
+                type: 'application/x-mpegURL',
+                withCredentials: false
+            });
+        }
+        // ----------------------------------------------------------------
         
         // Gestione errori dettagliata
         mobilePlayer.on('error', function (e) {
