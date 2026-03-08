@@ -101,6 +101,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             videoElement.setAttribute('webkit-playsinline', ''); // IMPORTANTE per iOS
             videoElement.setAttribute('x5-playsinline', ''); // Per alcuni browser mobile
             videoElement.setAttribute('crossorigin', 'anonymous');
+            videoElement.setAttribute('x-webkit-airplay', 'allow'); // Abilita AirPlay nativo su iOS
             videoContainer.insertBefore(videoElement, videoContainer.firstChild);
         }
         
@@ -127,7 +128,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
         
-        // Configurazione specifica per iOS
+        // Configurazione specifica per iOS (ora con overrideNative true per supportare qualità)
         const playerOptions = {
             controls: true,
             fluid: true,
@@ -135,7 +136,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: !videojs.browser.IS_SAFARI, // Non sovrascrivere su Safari
+                    overrideNative: true, // Forza VHS anche su Safari per permettere il selettore qualità
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
