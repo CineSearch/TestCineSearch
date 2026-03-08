@@ -125,8 +125,8 @@ async function playItemMobile(id, type, season = null, episode = null) {
             console.warn('M3U8 potrebbe non essere accessibile:', e.message);
         }
         
-        // Configura Video.js per iOS
-        setupVideoJsXhrHook();
+        // Configura Video.js per iOS (con hook condizionale)
+        setupVideoJsXhrHook(); // <-- ora al suo interno controlla se siamo su Safari
         
         // Configurazione specifica per iOS (MODIFICATA: overrideNative = true)
         const playerOptions = {
@@ -1064,7 +1064,7 @@ function cleanupMobilePlayer() {
     removeVideoJsXhrHook();
 }
 
-// ============ VIDEO.JS CORS HOOK ============
+// ============ VIDEO.JS CORS HOOK (MODIFICATO) ============
 const xhrRequestHook = (options) => {
     const originalUri = options.uri;
     
@@ -1144,7 +1144,7 @@ const xhrRequestHook = (options) => {
     return options;
 };
 
-// Aggiungi questa funzione per gestire le richieste di chiavi
+// Funzione per gestire le richieste di chiavi
 function fetchEncryptionKey(keyUrl) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -1185,8 +1185,16 @@ function fetchEncryptionKey(keyUrl) {
     });
 }
 
+// MODIFICATA: ora disabilita l'hook su Safari
 function setupVideoJsXhrHook() {
     if (typeof videojs === "undefined" || !videojs.Vhs) {
+        return;
+    }
+
+    // Se siamo su Safari, non installare l'hook per evitare problemi di rete
+    if (videojs.browser && videojs.browser.IS_SAFARI) {
+        console.log('Safari rilevato: hook XHR disabilitato per garantire la riproduzione');
+        requestHookInstalled = false;
         return;
     }
 
