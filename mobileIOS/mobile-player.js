@@ -125,7 +125,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             console.warn('M3U8 potrebbe non essere accessibile:', e.message);
         }
         
-        // Configura Video.js per iOS
+        // Configura Video.js per iOS (hook disabilitato su Safari)
         setupVideoJsXhrHook();
         
         // Configurazione specifica per iOS (overrideNative = true)
@@ -136,7 +136,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: true, // Forza VHS anche su Safari
+                    overrideNative: true, // Forza VHS anche su Safari per il selettore qualità
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
@@ -932,31 +932,14 @@ function cleanupMobilePlayer() {
     removeVideoJsXhrHook();
 }
 
-// ============ VIDEO.JS CORS HOOK (MODIFICATO PER SAFARI) ============
+// ============ VIDEO.JS CORS HOOK (DISABILITATO SU SAFARI) ============
 const xhrRequestHook = (options) => {
     const originalUri = options.uri;
     
     // console.log('📱 MOBILE - xhrRequestHook - URL originale:', originalUri);
     
     if (!originalUri) return options;
-
-    // SU SAFARI: modifica solo le richieste di chiavi, come per gli altri browser
-    if (videojs.browser && videojs.browser.IS_SAFARI) {
-        if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
-            // console.log('📱 Safari - Modifico richiesta chiave');
-            const directUrl = originalUri
-                .replace(/^https:\/\/[^\/]+\//, 'https://vixsrc.to/')
-                .replace(/^http:\/\/[^\/]+\//, 'http://vixsrc.to/');
-            options.uri = directUrl;
-            delete options.headers;
-            options.cors = true;
-            options.withCredentials = false;
-        }
-        // Per playlist, segmenti e tutto il resto, restituisci options invariato
-        return options;
-    }
-
-    // Per browser NON Safari, manteniamo la logica originale
+    
     // Gestione speciale per chiavi di crittografia
     if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
         // console.log('📱 MOBILE - Rilevata richiesta chiave di crittografia');
@@ -1072,6 +1055,13 @@ function fetchEncryptionKey(keyUrl) {
 
 function setupVideoJsXhrHook() {
     if (typeof videojs === "undefined" || !videojs.Vhs) {
+        return;
+    }
+
+    // Su Safari NON installiamo l'hook per evitare interferenze con le richieste di rete
+    if (videojs.browser && videojs.browser.IS_SAFARI) {
+        console.log('Safari rilevato: hook XHR disabilitato per garantire la riproduzione');
+        requestHookInstalled = false;
         return;
     }
 
