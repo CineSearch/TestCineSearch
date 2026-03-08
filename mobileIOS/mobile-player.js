@@ -8,6 +8,7 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
+let requestHookInstalled = false;
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -123,6 +124,9 @@ async function playItemMobile(id, type, season = null, episode = null) {
         } catch (e) {
             console.warn('M3U8 potrebbe non essere accessibile:', e.message);
         }
+        
+        // Configura Video.js per iOS
+        setupVideoJsXhrHook();
         
         // Configurazione specifica per iOS
         const playerOptions = {
@@ -998,6 +1002,8 @@ function closePlayerMobile() {
     currentMobileItem = null;
     currentMobileSeasons = [];
     
+    removeVideoJsXhrHook();
+    
     // Pulisci elemento video
     const videoElement = document.getElementById('mobile-player-video');
     if (videoElement) {
@@ -1054,6 +1060,150 @@ function cleanupMobilePlayer() {
     availableSubtitles = [];
     availableQualities = [];
     playerInitialized = false;
+    
+    // Rimuovi hook XHR
+    removeVideoJsXhrHook();
+}
+
+// ============ VIDEO.JS CORS HOOK ============
+const xhrRequestHook = (options) => {
+    const originalUri = options.uri;
+    
+    // console.log('📱 MOBILE - xhrRequestHook - URL originale:', originalUri);
+    
+    if (!originalUri) return options;
+    
+    // Gestione speciale per chiavi di crittografia
+    if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
+        // console.log('📱 MOBILE - Rilevata richiesta chiave di crittografia');
+        
+        // Usa l'URL diretto senza proxy per le chiavi
+        const directUrl = originalUri
+            .replace(/^https:\/\/[^\/]+\//, 'https://vixsrc.to/')
+            .replace(/^http:\/\/[^\/]+\//, 'http://vixsrc.to/');
+        
+        // console.log('📱 MOBILE - URL chiave diretto:', directUrl);
+        
+        options.uri = directUrl;
+        
+        // Rimuovi header non sicuri che causano errori
+        delete options.headers;
+        
+        // Configurazione CORS minima
+        options.cors = true;
+        options.withCredentials = false;
+        
+        return options;
+    }
+    
+    // Per segmenti media (.ts, .m3u8), usa URL diretto
+    if (originalUri.includes('.ts') || originalUri.includes('.m3u8')) {
+        // console.log('📱 MOBILE - Segmento media, uso URL diretto');
+        options.uri = originalUri;
+        
+        // Configurazione per media
+        options.cors = true;
+        options.withCredentials = false;
+        
+        // Non impostare header non sicuri
+        const safeHeaders = {};
+        if (options.headers) {
+            // Filtra solo header sicuri
+            const safeHeaderKeys = ['Accept', 'Accept-Language', 'Cache-Control'];
+            safeHeaderKeys.forEach(key => {
+                if (options.headers[key]) {
+                    safeHeaders[key] = options.headers[key];
+                }
+            });
+        }
+        
+        options.headers = safeHeaders;
+        
+        return options;
+    }
+    
+    // Per altri URL, mantieni il proxy ma senza header non sicuri
+    if (originalUri.includes('corsproxy.io') || 
+        originalUri.includes('allorigins.win') || 
+        originalUri.includes('api.codetabs.com')) {
+        // console.log('📱 MOBILE - URL già proxyato');
+        
+        // Pulisci header non sicuri
+        delete options.headers;
+        
+        return options;
+    }
+    
+    // Default: applica proxy ma senza header problematici
+    // console.log('📱 MOBILE - Applico proxy CORS (senza header non sicuri)');
+    const proxyUrl = applyCorsProxy(originalUri);
+    options.uri = proxyUrl;
+    
+    // Rimuovi header non sicuri
+    delete options.headers;
+    
+    return options;
+};
+
+// Aggiungi questa funzione per gestire le richieste di chiavi
+function fetchEncryptionKey(keyUrl) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            // console.log('📱 MOBILE - Tentativo di fetch chiave:', keyUrl);
+            
+            // Prova diverse strategie
+            const strategies = [
+                () => fetch(keyUrl, { mode: 'no-cors' }),
+                () => fetch(keyUrl.replace('https://', 'http://'), { mode: 'no-cors' }),
+                () => fetch(applyCorsProxy(keyUrl)),
+                () => fetch(keyUrl, { 
+                    headers: { 
+                        'Origin': 'https://vixsrc.to',
+                        'Referer': 'https://vixsrc.to/'
+                    }
+                })
+            ];
+            
+            for (let strategy of strategies) {
+                try {
+                    const response = await strategy();
+                    if (response.ok || response.type === 'opaque') {
+                        const arrayBuffer = await response.arrayBuffer();
+                        // console.log('📱 MOBILE - Chiave ottenuta, dimensione:', arrayBuffer.byteLength);
+                        resolve(arrayBuffer);
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('📱 MOBILE - Strategia fallita:', e.message);
+                }
+            }
+            
+            reject(new Error('Impossibile ottenere la chiave di crittografia'));
+            
+        } catch (error) {
+            reject(error);
+        }
+    });
+}
+
+function setupVideoJsXhrHook() {
+    if (typeof videojs === "undefined" || !videojs.Vhs) {
+        return;
+    }
+
+    if (requestHookInstalled) {
+        return;
+    }
+
+    videojs.Vhs.xhr.onRequest(xhrRequestHook);
+    requestHookInstalled = true;
+}
+
+function removeVideoJsXhrHook() {
+    if (typeof videojs !== "undefined" && videojs.Vhs && requestHookInstalled) {
+        videojs.Vhs.xhr.offRequest(xhrRequestHook);
+        requestHookInstalled = false;
+    }
 }
 
 function openInExternalPlayer(tmdbId, mediaType, season, episode) {
