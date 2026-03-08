@@ -8,6 +8,7 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
+let requestHookInstalled = false; // <-- AGGIUNTA
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -124,13 +125,10 @@ async function playItemMobile(id, type, season = null, episode = null) {
             console.warn('M3U8 potrebbe non essere accessibile:', e.message);
         }
         
-        // Determina se siamo su Safari
-        const isSafari = videojs.browser && videojs.browser.IS_SAFARI;
+        // Configura Video.js per iOS
+        setupVideoJsXhrHook();
         
-        // Configura Video.js per iOS - MODIFICATO: forza VHS su tutti i browser
-        setupVideoJsXhrHook(isSafari); // Passiamo isSafari per disabilitare l'hook su Safari
-        
-        // Configurazione specifica per iOS
+        // Configurazione specifica per iOS (MODIFICATA: overrideNative = true)
         const playerOptions = {
             controls: true,
             fluid: true,
@@ -138,7 +136,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: true, // Forza VHS anche su Safari per il selettore qualità
+                    overrideNative: true, // <-- FORZA VHS SU TUTTI (incluso Safari)
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
@@ -231,10 +229,10 @@ async function playItemMobile(id, type, season = null, episode = null) {
             showMobileLoading(false);
             // console.log('✅ Player ready su iOS');
             
-            // AGGIUNTA: Ritardo maggiore per permettere a VHS di inizializzarsi su iOS
+            // AGGIUNTA: Ritardo per permettere a VHS di inizializzarsi su iOS
             setTimeout(() => {
                 extractAvailableQualities();
-            }, 3000); // Aumentato a 3 secondi
+            }, 3000); // 3 secondi di attesa
             
             // Riproduci automaticamente (iOS potrebbe bloccare)
             const playPromise = mobilePlayer.play();
@@ -1067,36 +1065,6 @@ function cleanupMobilePlayer() {
 }
 
 // ============ VIDEO.JS CORS HOOK ============
-let requestHookInstalled = false;
-
-// Modifichiamo la funzione setup per accettare un parametro isSafari
-function setupVideoJsXhrHook(isSafari = false) {
-    if (typeof videojs === "undefined" || !videojs.Vhs) {
-        return;
-    }
-
-    if (requestHookInstalled) {
-        return;
-    }
-
-    // Su Safari disabilitiamo l'hook per evitare problemi di rete
-    if (isSafari) {
-        console.log('📱 Safari rilevato: hook XHR disabilitato');
-        requestHookInstalled = false;
-        return;
-    }
-
-    videojs.Vhs.xhr.onRequest(xhrRequestHook);
-    requestHookInstalled = true;
-}
-
-function removeVideoJsXhrHook() {
-    if (typeof videojs !== "undefined" && videojs.Vhs && requestHookInstalled) {
-        videojs.Vhs.xhr.offRequest(xhrRequestHook);
-        requestHookInstalled = false;
-    }
-}
-
 const xhrRequestHook = (options) => {
     const originalUri = options.uri;
     
@@ -1215,6 +1183,26 @@ function fetchEncryptionKey(keyUrl) {
             reject(error);
         }
     });
+}
+
+function setupVideoJsXhrHook() {
+    if (typeof videojs === "undefined" || !videojs.Vhs) {
+        return;
+    }
+
+    if (requestHookInstalled) {
+        return;
+    }
+
+    videojs.Vhs.xhr.onRequest(xhrRequestHook);
+    requestHookInstalled = true;
+}
+
+function removeVideoJsXhrHook() {
+    if (typeof videojs !== "undefined" && videojs.Vhs && requestHookInstalled) {
+        videojs.Vhs.xhr.offRequest(xhrRequestHook);
+        requestHookInstalled = false;
+    }
 }
 
 function openInExternalPlayer(tmdbId, mediaType, season, episode) {
