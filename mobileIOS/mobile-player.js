@@ -8,7 +8,6 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
-let requestHookInstalled = true; // <-- AGGIUNTA (mancava nell'originale)
 
 // ============ UTILITY DI RILEVAMENTO CODEC ============
 function checkHEVCSupport() {
