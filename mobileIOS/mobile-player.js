@@ -101,7 +101,6 @@ async function playItemMobile(id, type, season = null, episode = null) {
             videoElement.setAttribute('webkit-playsinline', ''); // IMPORTANTE per iOS
             videoElement.setAttribute('x5-playsinline', ''); // Per alcuni browser mobile
             videoElement.setAttribute('crossorigin', 'anonymous');
-            videoElement.setAttribute('x-webkit-airplay', 'allow'); // Abilita AirPlay nativo su iOS
             videoContainer.insertBefore(videoElement, videoContainer.firstChild);
         }
         
@@ -128,7 +127,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
         
-        // Configurazione specifica per iOS (ora con overrideNative true per supportare qualità)
+        // Configurazione specifica per iOS
         const playerOptions = {
             controls: true,
             fluid: true,
@@ -136,7 +135,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: true, // Forza VHS anche su Safari per permettere il selettore qualità
+                    overrideNative: !videojs.browser.IS_SAFARI, // Non sovrascrivere su Safari
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
@@ -229,6 +228,11 @@ async function playItemMobile(id, type, season = null, episode = null) {
             showMobileLoading(false);
             // console.log('✅ Player ready su iOS');
             
+            // EstrAE QUALITÀ DOPO 2 SECONDI (NECESSARIO PER iOS)
+            setTimeout(() => {
+                extractAvailableQualities();
+            }, 2000);
+            
             // Riproduci automaticamente (iOS potrebbe bloccare)
             const playPromise = mobilePlayer.play();
             
@@ -308,7 +312,7 @@ function initQualitySelectorPlugin() {
 function extractAvailableQualities() {
     return new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 20;
+        const maxAttempts = 30; // Aumentato per iOS
         
         function checkVhs() {
             attempts++;
@@ -328,6 +332,7 @@ function extractAvailableQualities() {
                     return;
                 }
                 
+                // Per iOS dobbiamo usare vhs, ma potrebbe non essere disponibile subito
                 if (!tech.vhs) {
                     // console.log(`Tentativo ${attempts}: VHS non disponibile`);
                     if (attempts < maxAttempts) {
@@ -398,6 +403,11 @@ function extractAvailableQualities() {
                 // Aggiorna il dropdown
                 updateQualitySelector();
                 
+                // Mostra i controlli aggiuntivi se ci sono qualità
+                if (availableQualities.length > 0) {
+                    showAdditionalControls();
+                }
+                
                 // Se ci sono qualità, informa anche il plugin
                 if (availableQualities.length > 0) {
                     // console.log(`✅ ${availableQualities.length} qualità disponibili`);
@@ -418,6 +428,7 @@ function extractAvailableQualities() {
                 resolve(availableQualities);
                 
             } catch (error) {
+                console.error('Errore in checkVhs:', error);
                 if (attempts < maxAttempts) {
                     setTimeout(checkVhs, 500);
                 } else {
