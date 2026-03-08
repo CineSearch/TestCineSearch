@@ -128,7 +128,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
         
-        // Configurazione specifica per iOS (MODIFICATA: overrideNative = true)
+        // Configurazione specifica per iOS
         const playerOptions = {
             controls: true,
             fluid: true,
@@ -136,7 +136,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: true, // <-- Forza VHS anche su Safari
+                    overrideNative: !videojs.browser.IS_SAFARI, // Non sovrascrivere su Safari
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
@@ -229,10 +229,11 @@ async function playItemMobile(id, type, season = null, episode = null) {
             showMobileLoading(false);
             // console.log('✅ Player ready su iOS');
             
-            // AGGIUNTA: Ritardo per permettere a VHS di inizializzarsi su iOS
+            // --- MODIFICA 1: Ritardo per estrarre qualità ---
             setTimeout(() => {
                 extractAvailableQualities();
-            }, 3000); // 3 secondi di attesa
+            }, 3000);
+            // ------------------------------------------------
             
             // Riproduci automaticamente (iOS potrebbe bloccare)
             const playPromise = mobilePlayer.play();
@@ -313,7 +314,7 @@ function initQualitySelectorPlugin() {
 function extractAvailableQualities() {
     return new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 30; // <-- AUMENTATO per iOS
+        const maxAttempts = 30; // <-- MODIFICA 2: aumentato da 20 a 30
         
         function checkVhs() {
             attempts++;
@@ -1072,8 +1073,9 @@ const xhrRequestHook = (options) => {
     
     if (!originalUri) return options;
 
-    // SU SAFARI: modifica solo le richieste di chiavi, lascia invariato tutto il resto
+    // --- MODIFICA 3: per Safari modifica solo le richieste di chiavi ---
     if (videojs.browser && videojs.browser.IS_SAFARI) {
+        // Se è una richiesta di chiave, modifichiamo l'URL per renderla accessibile
         if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
             // console.log('📱 Safari - Modifico richiesta chiave');
             const directUrl = originalUri
@@ -1084,9 +1086,10 @@ const xhrRequestHook = (options) => {
             options.cors = true;
             options.withCredentials = false;
         }
-        // Per playlist, segmenti e tutto il resto, restituisci options invariato
+        // Per tutte le altre richieste (playlist, segmenti) restituiamo options così com'è
         return options;
     }
+    // -------------------------------------------------------------------
 
     // Per browser NON Safari, manteniamo la logica originale
     // Gestione speciale per chiavi di crittografia
