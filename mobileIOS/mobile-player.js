@@ -127,7 +127,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         // Configura Video.js per iOS
         setupVideoJsXhrHook();
         
-        // Configurazione specifica per iOS
+        // Configurazione specifica per iOS (MODIFICATA: overrideNative = true per forzare VHS)
         const playerOptions = {
             controls: true,
             fluid: true,
@@ -135,7 +135,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             playbackRates: [0.5, 0.75, 1, 1.25, 1.5, 2],
             html5: {
                 vhs: {
-                    overrideNative: !videojs.browser.IS_SAFARI, // Non sovrascrivere su Safari
+                    overrideNative: true, // Forza VHS anche su Safari
                     enableLowInitialPlaylist: true,
                     smoothQualityChange: true,
                     useDevicePixelRatio: true,
@@ -228,7 +228,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             showMobileLoading(false);
             // console.log('✅ Player ready su iOS');
             
-            // EstrAE QUALITÀ DOPO 2 SECONDI (NECESSARIO PER iOS)
+            // AGGIUNTA: Ritardo per permettere a VHS di inizializzarsi su iOS
             setTimeout(() => {
                 extractAvailableQualities();
             }, 2000);
@@ -312,7 +312,7 @@ function initQualitySelectorPlugin() {
 function extractAvailableQualities() {
     return new Promise((resolve) => {
         let attempts = 0;
-        const maxAttempts = 30; // Aumentato per iOS
+        const maxAttempts = 20;
         
         function checkVhs() {
             attempts++;
@@ -332,7 +332,6 @@ function extractAvailableQualities() {
                     return;
                 }
                 
-                // Per iOS dobbiamo usare vhs, ma potrebbe non essere disponibile subito
                 if (!tech.vhs) {
                     // console.log(`Tentativo ${attempts}: VHS non disponibile`);
                     if (attempts < maxAttempts) {
@@ -403,11 +402,6 @@ function extractAvailableQualities() {
                 // Aggiorna il dropdown
                 updateQualitySelector();
                 
-                // Mostra i controlli aggiuntivi se ci sono qualità
-                if (availableQualities.length > 0) {
-                    showAdditionalControls();
-                }
-                
                 // Se ci sono qualità, informa anche il plugin
                 if (availableQualities.length > 0) {
                     // console.log(`✅ ${availableQualities.length} qualità disponibili`);
@@ -428,7 +422,6 @@ function extractAvailableQualities() {
                 resolve(availableQualities);
                 
             } catch (error) {
-                console.error('Errore in checkVhs:', error);
                 if (attempts < maxAttempts) {
                     setTimeout(checkVhs, 500);
                 } else {
