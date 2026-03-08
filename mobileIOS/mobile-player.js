@@ -126,7 +126,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         }
         
         // Configura Video.js per iOS
-        setupVideoJsXhrHook(); // Ora installa l'hook su tutti i browser, ma con logica speciale per Safari
+        setupVideoJsXhrHook();
         
         // Configurazione specifica per iOS (overrideNative = true per forzare VHS)
         const playerOptions = {
@@ -932,20 +932,27 @@ function cleanupMobilePlayer() {
     removeVideoJsXhrHook();
 }
 
-// ============ VIDEO.JS CORS HOOK (MODIFICATO PER SAFARI) ============
+// ============ VIDEO.JS CORS HOOK (MODIFICATO PER SAFARI: SOLO CHIAVI) ============
 const xhrRequestHook = (options) => {
     const originalUri = options.uri;
     
     if (!originalUri) return options;
 
-    // Su Safari: modifica solo le richieste di chiavi, lascia invariati segmenti e playlist
+    // Su Safari: modifica solo le richieste di chiavi, lascia tutto il resto invariato
     if (videojs.browser && videojs.browser.IS_SAFARI) {
-        if (!originalUri.includes('/storage/enc.key') && !originalUri.includes('.key')) {
-            // Non è una chiave, restituisci options invariato
-            return options;
+        if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
+            // Modifica solo l'URL della chiave
+            const directUrl = originalUri
+                .replace(/^https:\/\/[^\/]+\//, 'https://vixsrc.to/')
+                .replace(/^http:\/\/[^\/]+\//, 'http://vixsrc.to/');
+            options.uri = directUrl;
+            // Non toccare altro
         }
+        // Per tutte le altre richieste (playlist, segmenti) restituiamo options così com'è
+        return options;
     }
-    
+
+    // Per browser non Safari, manteniamo la logica originale
     // Gestione speciale per chiavi di crittografia
     if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
         const directUrl = originalUri
@@ -960,7 +967,7 @@ const xhrRequestHook = (options) => {
         return options;
     }
     
-    // Per segmenti media (.ts, .m3u8), usa URL diretto (solo se non siamo su Safari, perché su Safari siamo già usciti prima)
+    // Per segmenti media (.ts, .m3u8), usa URL diretto
     if (originalUri.includes('.ts') || originalUri.includes('.m3u8')) {
         options.uri = originalUri;
         options.cors = true;
