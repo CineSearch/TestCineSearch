@@ -8,7 +8,7 @@ let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
-let requestHookInstalled = false; // <-- AGGIUNTA (mancava nell'originale)
+//let requestHookInstalled = false; // <-- AGGIUNTA (mancava nell'originale)
 
 // ============ FUNZIONE UTILITY PER RILEVARE SAFARI ============
 function isSafari() {
