@@ -77,6 +77,90 @@ function showAdditionalControls() {
     }
 }
 
+// ============ RECUPERO STREAM M3U8 ============
+async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = null) {
+    try {
+        let vixsrcUrl = `https://${VIXSRC_URL}/${isMovie ? 'movie' : 'tv'}/${tmdbId}`;
+        if (!isMovie && season !== null && episode !== null) {
+            vixsrcUrl += `/${season}/${episode}`;
+        }
+        
+        // console.log('Fetching vixsrc URL:', vixsrcUrl);
+        
+        const proxiedVixsrcUrl = applyCorsProxy(vixsrcUrl);
+        const response = await fetch(proxiedVixsrcUrl);
+        const html = await response.text();
+        
+        // Estrai parametri playlist
+        const playlistParamsRegex = /window\.masterPlaylist[^:]+params:[^{]+({[^<]+?})/;
+        const playlistParamsMatch = html.match(playlistParamsRegex);
+        
+        if (!playlistParamsMatch) {
+            throw new Error('Parametri playlist non trovati');
+        }
+        
+        let playlistParamsStr = playlistParamsMatch[1]
+            .replace(/'/g, '"')
+            .replace(/\s+/g, '')
+            .replace(/\n/g, '')
+            .replace(/\\n/g, '')
+            .replace(',}', '}');
+        
+        let playlistParams;
+        try {
+            playlistParams = JSON.parse(playlistParamsStr);
+        } catch (e) {
+            throw new Error('Errore parsing parametri: ' + e.message);
+        }
+        
+        const playlistUrlRegex = /window\.masterPlaylist\s*=\s*\{[\s\S]*?url:\s*'([^']+)'/;
+        const playlistUrlMatch = html.match(playlistUrlRegex);
+        
+        if (!playlistUrlMatch) {
+            throw new Error('URL playlist non trovato');
+        }
+        
+        const playlistUrl = playlistUrlMatch[1];
+        // console.log('Playlist URL trovato:', playlistUrl);
+        
+        const canPlayFHDRegex = /window\.canPlayFHD\s+?=\s+?(\w+)/;
+        const canPlayFHDMatch = html.match(canPlayFHDRegex);
+        const canPlayFHD = canPlayFHDMatch && canPlayFHDMatch[1] === 'true';
+        
+        const hasQuery = /\?[^#]+/.test(playlistUrl);
+        const separator = hasQuery ? '&' : '?';
+        
+        const m3u8Url = playlistUrl + 
+            separator + 
+            'expires=' + playlistParams.expires + 
+            '&token=' + playlistParams.token + 
+            (canPlayFHD ? '&h=1' : '');
+        
+        // console.log('M3U8 URL ottenuto:', m3u8Url);
+        
+        // DEBUG: Scarica e controlla la playlist M3U8
+        try {
+            const m3u8Response = await fetch(applyCorsProxy(m3u8Url));
+            const m3u8Content = await m3u8Response.text();
+            // console.log('📱 MOBILE - Contenuto M3U8 (prime 500 caratteri):', m3u8Content.substring(0, 500));
+            
+            const keyLines = m3u8Content.split('\n').filter(line => line.includes('EXT-X-KEY'));
+            // console.log('📱 MOBILE - Linee chiave trovate:', keyLines);
+        } catch (e) {
+            // console.log('📱 MOBILE - Errore lettura M3U8:', e);
+        }
+        
+        return {
+            iframeUrl: vixsrcUrl,
+            m3u8Url: m3u8Url
+        };
+        
+    } catch (error) {
+        console.error('Errore getDirectStreamMobile:', error);
+        throw error;
+    }
+}
+
 // ============ FUNZIONI PLAYER (RISCITTE PER HLS.js) ============
 
 /**
