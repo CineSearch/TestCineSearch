@@ -1,9 +1,9 @@
-// mobile-player.js - Gestione player video con HLS.js (COMPLETO)
+// mobile-player.js - Gestione player video con HLS.js (COMPLETO, SENZA VIDEO.JS)
 
 // ============ VARIABILI PLAYER ============
 let currentMobileItem = null;
 let currentMobileSeasons = [];
-let mobilePlayer = null;        // Wrapper compatibile (emula Video.js)
+let mobilePlayer = null;        // Wrapper compatibile (emula le funzioni necessarie)
 let hls = null;                 // Istanza HLS.js interna
 let currentStreamData = null;
 let availableAudioTracks = [];
@@ -186,7 +186,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         if (!videoElement) {
             videoElement = document.createElement('video');
             videoElement.id = 'mobile-player-video';
-            videoElement.className = 'video-js vjs-default-skin vjs-big-play-centered'; // classe CSS
+            videoElement.className = 'hls-video'; // classe neutra per eventuali stili
             videoElement.setAttribute('controls', '');
             videoElement.setAttribute('preload', 'auto');
             videoElement.setAttribute('playsinline', '');
@@ -275,7 +275,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             });
             
             // Crea il wrapper compatibile con le funzioni esistenti
-            mobilePlayer = createVideoJsCompatibleWrapper(videoElement, hls);
+            mobilePlayer = createHlsCompatibleWrapper(videoElement, hls);
             
             // Aggiungi listener per aggiornare UI quando cambiano tracce
             videoElement.addEventListener('loadedmetadata', () => {
@@ -310,10 +310,10 @@ async function playItemMobile(id, type, season = null, episode = null) {
     }
 }
 
-// ============ WRAPPER COMPATIBILE (emula oggetto Video.js) ============
+// ============ WRAPPER COMPATIBILE (emula le funzioni attese dal codice) ============
 
-function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
-    // Mappa le tracce audio HLS.js in oggetti stile Video.js
+function createHlsCompatibleWrapper(videoElement, hlsInstance) {
+    // Mappa le tracce audio HLS.js in oggetti stile atteso
     const audioTracksList = [];
     const updateAudioTracks = () => {
         audioTracksList.length = 0;
@@ -349,8 +349,8 @@ function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
     hlsInstance.on(Hls.Events.AUDIO_TRACKS_UPDATED, updateAudioTracks);
     hlsInstance.on(Hls.Events.SUBTITLE_TRACKS_UPDATED, updateTextTracks);
     
-    // Crea l'oggetto tech_.vhs finto per qualità
-    const vhsMock = {
+    // Crea un oggetto che emuli le proprietà di qualità attese
+    const qualityMock = {
         playlists: {
             master: {
                 playlists: []
@@ -367,7 +367,7 @@ function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
     
     // Aggiorna la lista qualità quando cambia
     const updateQualities = () => {
-        vhsMock.playlists.master.playlists = (hlsInstance.levels || []).map((level, idx) => ({
+        qualityMock.playlists.master.playlists = (hlsInstance.levels || []).map((level, idx) => ({
             attributes: {
                 RESOLUTION: {
                     height: level.height || 0,
@@ -411,12 +411,13 @@ function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
             return tracks;
         },
         
+        // Oggetto tech_ con le proprietà attese
         tech_: {
-            vhs: vhsMock
+            vhs: qualityMock
         },
         
         trigger: (eventName) => {
-            // Emula il trigger di Video.js (non serve, mantenuto per compatibilità)
+            // Non necessario, mantenuto per compatibilità
         }
     };
 }
@@ -986,7 +987,7 @@ function cleanupMobilePlayer() {
         videoContainer.innerHTML = '';
         const videoElement = document.createElement('video');
         videoElement.id = 'mobile-player-video';
-        videoElement.className = 'video-js vjs-theme-cinesearch';
+        videoElement.className = 'hls-video'; // classe neutra
         videoElement.setAttribute('controls', '');
         videoElement.setAttribute('preload', 'auto');
         videoElement.setAttribute('playsinline', '');
