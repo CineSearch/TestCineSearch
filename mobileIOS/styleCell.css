@@ -537,33 +537,12 @@ body {
     padding: 15px;
 }
 
-/* Stili per il video HLS */
 #mobile-player-video {
     width: 100%;
     aspect-ratio: 16/9;
     background: #000;
     border-radius: 10px;
     overflow: hidden;
-    display: block;
-}
-
-/* Loading spinner generico per HLS.js */
-.hls-loading-spinner {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(255, 255, 255, 0.2);
-    border-top-color: #e50914;
-    border-radius: 50%;
-    animation: hls-spin 1s linear infinite;
-    z-index: 10;
-}
-
-@keyframes hls-spin {
-    to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 .mobile-player-info {
@@ -702,45 +681,107 @@ body {
     }
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .mobile-video-element {
+        width: 100%;
+        height: auto;
+        max-height: 80vh;
+        background: #000;
+    }
+    
+    .mobile-video-container {
+        position: relative;
+        width: 100%;
+        margin: 20px 0;
+        background: #000;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .mobile-player-controls {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin: 15px 0;
+    }
+    
+    .mobile-control-btn {
+        background: #e50914;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+/* Video.js Mobile Styling */
+.vjs-theme-cinesearch {
+    --vjs-theme-cinesearch--primary: #e50914;
 }
 
-.mobile-video-element {
+.video-js {
     width: 100%;
     height: auto;
-    max-height: 80vh;
-    background: #000;
-}
-
-.mobile-video-container {
-    position: relative;
-    width: 100%;
-    margin: 20px 0;
+    aspect-ratio: 16/9;
     background: #000;
     border-radius: 10px;
     overflow: hidden;
 }
 
-.mobile-player-controls {
-    display: flex;
-    justify-content: center;
-    gap: 15px;
-    margin: 15px 0;
+.vjs-poster {
+    background-size: cover;
 }
 
-.mobile-control-btn {
-    background: #e50914;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
+/* Fullscreen mobile */
+.video-js.vjs-fullscreen {
+    height: 100vh;
+    aspect-ratio: unset;
+    border-radius: 0;
 }
 
-/* Controlli aggiuntivi player mobile (QUALITÀ, AUDIO, SOTTOTITOLI) */
+/* Loading spinner per mobile */
+.vjs-loading-spinner {
+    border: 6px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #e50914;
+    border-radius: 50%;
+    animation: vjs-spinner-spin 1.1s linear infinite;
+}
+
+@keyframes vjs-spinner-spin {
+    100% { transform: rotate(360deg); }
+}
+
+/* Controlli per touch */
+.vjs-control-bar {
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.vjs-button > .vjs-icon-placeholder:before {
+    font-size: 1.8em;
+}
+
+/* Adatta i controlli per mobile */
+@media (max-width: 768px) {
+    .vjs-control-bar {
+        height: 50px;
+    }
+    
+    .vjs-progress-control {
+        height: 30px;
+    }
+    
+    .vjs-playback-rate {
+        display: none; /* Nascondi su mobile per spazio */
+    }
+}
+/* Aggiungi alla fine di styleCell.css */
+
+/* Controlli aggiuntivi player mobile */
 .mobile-additional-controls {
     display: none;
     flex-wrap: wrap;
@@ -862,7 +903,7 @@ body {
     text-overflow: ellipsis;
 }
 
-/* Responsive per controlli */
+/* Responsive */
 @media (max-width: 480px) {
     .mobile-additional-controls {
         flex-direction: column;
@@ -897,7 +938,6 @@ body {
     display: flex;
     animation: fadeInUp 0.3s ease-out;
 }
-
 /* Stelle preferiti */
 .star-empty {
     color: rgba(255, 255, 255, 0.3) !important; /* Stella vuota trasparente */
@@ -930,7 +970,6 @@ body {
 .mobile-card-btn.fav[data-fav="false"] i {
     color: rgba(255, 255, 255, 0.3) !important;
 }
-
 /* Continua Visione */
 .continue-card {
     position: relative;
