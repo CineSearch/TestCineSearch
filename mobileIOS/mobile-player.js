@@ -163,7 +163,160 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
 }
 
 // ============ FUNZIONI PLAYER (HLS.js) ============
+async function playItemMobile(id, type, season = null, episode = null) {
+    showMobileLoading(true, "Preparazione video...");
+    
+    // Timeout di sicurezza: se dopo 20 secondi non si è ancora verificato MANIFEST_PARSED, mostra errore
+    const loadingTimeout = setTimeout(() => {
+        showMobileLoading(false);
+        showMobileError("Timeout: il video impiega troppo tempo a caricarsi. Verifica la connessione o riprova più tardi.");
+    }, 20000);
+    
+    try {
+        // Distrugge player precedente
+        if (mobilePlayer) {
+            mobilePlayer.dispose();
+            mobilePlayer = null;
+        }
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
+        
+        const videoContainer = document.querySelector('.mobile-video-container');
+        let videoElement = document.getElementById('mobile-player-video');
+        
+        if (!videoElement) {
+            videoElement = document.createElement('video');
+            videoElement.id = 'mobile-player-video';
+            videoElement.className = 'hls-video';
+            videoElement.setAttribute('controls', '');
+            videoElement.setAttribute('preload', 'auto');
+            videoElement.setAttribute('playsinline', '');
+            videoElement.setAttribute('webkit-playsinline', '');
+            videoElement.setAttribute('x5-playsinline', '');
+            videoElement.setAttribute('crossorigin', 'anonymous');
+            videoContainer.insertBefore(videoElement, videoContainer.firstChild);
+        }
+        
+        // Ottieni stream M3U8
+        const streamData = await getDirectStreamMobile(id, type === 'movie', season, episode);
+        currentStreamData = streamData;
+        
+        if (!streamData || !streamData.m3u8Url) {
+            throw new Error('Impossibile ottenere lo stream');
+        }
+        
+        const m3u8Url = streamData.m3u8Url;
+        
+        // Verifica accessibilità (opzionale) - non bloccante
+        fetch(m3u8Url, { method: 'HEAD' })
+            .then(res => {
+                if (!res.ok) console.warn('M3U8 HEAD non OK:', res.status);
+            })
+            .catch(e => console.warn('M3U8 non accessibile:', e.message));
+        
+        if (Hls.isSupported()) {
+            hls = new Hls({
+                debug: false, // utile se riesci a collegare il telefono al Mac, altrimenti lascia false
+                xhrSetup: (xhr, url) => {
+                    if (url.includes('.key') || url.includes('enc.key')) {
+                        xhr.withCredentials = false;
+                    }
+                }
+            });
+            
+            hls.attachMedia(videoElement);
+            
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                hls.loadSource(m3u8Url);
+            });
+            
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                clearTimeout(loadingTimeout);
+                showMobileLoading(false);
+                extractAvailableQualities();
+                extractAudioTracks();
+                extractSubtitles();
+                videoElement.play().catch(error => {
+                    showMobileInfo('Tocca il video per avviare la riproduzione');
+                });
+            });
+            
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                console.error('HLS.js error:', data);
+                
+                // Mostra un messaggio visibile solo se l'errore è fatale e il manifest non è ancora stato parsato
+                if (data.fatal) {
+                    clearTimeout(loadingTimeout);
+                    showMobileLoading(false);
+                    
+                    let errorMsg = 'Errore di riproduzione: ';
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            errorMsg += 'problema di rete. Controlla la connessione.';
+                            break;
+                        case Hls.ErrorTypes.MEDIA_ERROR:
+                            errorMsg += 'formato non supportato.';
+                            break;
+                        default:
+                            errorMsg += data.details || 'errore sconosciuto.';
+                    }
+                    showMobileError(errorMsg);
+                    
+                    hls.destroy();
+                } else if (data.type === Hls.ErrorTypes.NETWORK_ERROR && data.details === 'manifestLoadError') {
+                    // Errore nel caricamento del manifest (prima del parsing)
+                    clearTimeout(loadingTimeout);
+                    showMobileLoading(false);
+                    showMobileError('Impossibile caricare la playlist. Verifica che il video sia disponibile.');
+                }
+            });
+            
+            mobilePlayer = createHlsCompatibleWrapper(videoElement, hls);
+            
+            videoElement.addEventListener('loadedmetadata', () => {
+                refreshMobilePlayerControls();
+            });
+            
+            trackVideoProgressMobile(id, type, videoElement, season, episode);
+            
+        } else {
+            // Fallback nativo (Safari)
+            videoElement.src = m3u8Url;
+            
+            const nativeTimeout = setTimeout(() => {
+                showMobileLoading(false);
+                showMobileError("Timeout: il video nativo non risponde.");
+            }, 15000);
+            
+            videoElement.addEventListener('loadedmetadata', () => {
+                clearTimeout(nativeTimeout);
+                clearTimeout(loadingTimeout);
+                showMobileLoading(false);
+                videoElement.play().catch(e => showMobileInfo('Tocca per riprodurre'));
+            });
+            
+            videoElement.addEventListener('error', (e) => {
+                clearTimeout(nativeTimeout);
+                clearTimeout(loadingTimeout);
+                showMobileLoading(false);
+                showMobileError('Errore di riproduzione nativa. Prova con un altro browser.');
+            });
+            
+            mobilePlayer = createNativeWrapper(videoElement);
+            trackVideoProgressMobile(id, type, videoElement, season, episode);
+        }
+        
+    } catch (error) {
+        clearTimeout(loadingTimeout);
+        console.error('📱 Errore riproduzione mobile:', error);
+        showMobileLoading(false);
+        showMobileError(`Impossibile riprodurre: ${error.message}`);
+    }
+}
 
+/*
 async function playItemMobile(id, type, season = null, episode = null) {
     // console.log(`Riproduzione ${type} ${id}`, season ? `S${season}E${episode}` : '');
     
@@ -309,7 +462,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         showMobileError(`Impossibile riprodurre: ${error.message}`);
     }
 }
-
+*/
 // ============ WRAPPER COMPATIBILE (emula le funzioni attese dal codice) ============
 
 function createHlsCompatibleWrapper(videoElement, hlsInstance) {
