@@ -1,14 +1,15 @@
-// mobile-player.js - Gestione player video con HLS.js
+// mobile-player.js - Gestione player video con HLS.js (COMPLETO)
 
 // ============ VARIABILI PLAYER ============
 let currentMobileItem = null;
 let currentMobileSeasons = [];
-let mobilePlayer = null;        // Ora sarà il nostro wrapper compatibile con Video.js
+let mobilePlayer = null;        // Wrapper compatibile (emula Video.js)
 let hls = null;                 // Istanza HLS.js interna
 let currentStreamData = null;
 let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
+let cleanupFunctions = [];      // Per gestire cleanup di eventuali listener
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
@@ -138,7 +139,7 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
         
         // console.log('M3U8 URL ottenuto:', m3u8Url);
         
-        // DEBUG: Scarica e controlla la playlist M3U8
+        // DEBUG: Scarica e controlla la playlist M3U8 (opzionale)
         try {
             const m3u8Response = await fetch(applyCorsProxy(m3u8Url));
             const m3u8Content = await m3u8Response.text();
@@ -161,19 +162,15 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
     }
 }
 
-// ============ FUNZIONI PLAYER (RISCITTE PER HLS.js) ============
+// ============ FUNZIONI PLAYER (HLS.js) ============
 
-/**
- * Sostituisce playItemMobile originale con versione HLS.js
- * Mantiene la stessa firma e comportamento esterno.
- */
 async function playItemMobile(id, type, season = null, episode = null) {
     // console.log(`Riproduzione ${type} ${id}`, season ? `S${season}E${episode}` : '');
     
     showMobileLoading(true, "Preparazione video...");
     
     try {
-        // Distrugge player precedente (se esiste)
+        // Distrugge player precedente
         if (mobilePlayer) {
             mobilePlayer.dispose();
             mobilePlayer = null;
@@ -189,7 +186,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
         if (!videoElement) {
             videoElement = document.createElement('video');
             videoElement.id = 'mobile-player-video';
-            videoElement.className = 'video-js vjs-default-skin vjs-big-play-centered'; // manteniamo classe per CSS
+            videoElement.className = 'video-js vjs-default-skin vjs-big-play-centered'; // classe CSS
             videoElement.setAttribute('controls', '');
             videoElement.setAttribute('preload', 'auto');
             videoElement.setAttribute('playsinline', '');
@@ -208,7 +205,6 @@ async function playItemMobile(id, type, season = null, episode = null) {
         }
         
         const m3u8Url = streamData.m3u8Url;
-        // console.log('URL M3U8 originale:', m3u8Url);
         
         // Verifica accessibilità (opzionale)
         try {
@@ -225,12 +221,9 @@ async function playItemMobile(id, type, season = null, episode = null) {
                 xhrSetup: (xhr, url) => {
                     // Personalizza le richieste XHR se necessario (es. per chiavi)
                     if (url.includes('.key') || url.includes('enc.key')) {
-                        // Per le chiavi, a volte serve un trattamento speciale
                         xhr.withCredentials = false;
                     }
-                },
-                // Loader personalizzato per gestire proxy CORS (opzionale, manteniamo l'hook esistente)
-                // ... eventualmente integra la logica di xhrRequestHook
+                }
             });
             
             // Attacca il player al video
@@ -281,7 +274,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
                 }
             });
             
-            // Crea il wrapper mobilePlayer compatibile con Video.js
+            // Crea il wrapper compatibile con le funzioni esistenti
             mobilePlayer = createVideoJsCompatibleWrapper(videoElement, hls);
             
             // Aggiungi listener per aggiornare UI quando cambiano tracce
@@ -290,21 +283,24 @@ async function playItemMobile(id, type, season = null, episode = null) {
                 refreshMobilePlayerControls();
             });
             
+            // Avvia il tracciamento del progresso
+            trackVideoProgressMobile(id, type, videoElement, season, episode);
+            
         } else {
             // Fallback per browser senza MSE (es. Safari desktop) -> usa native HLS
             // console.log('HLS.js non supportato, uso riproduzione nativa');
             videoElement.src = m3u8Url;
             videoElement.addEventListener('loadedmetadata', () => {
                 showMobileLoading(false);
-                // Non possiamo estrarre qualità/tracce con HLS nativo, ma almeno funziona
                 videoElement.play().catch(e => showMobileInfo('Tocca per riprodurre'));
             });
             videoElement.addEventListener('error', (e) => {
                 console.error('Errore video nativo:', e);
                 showMobileError('Errore di riproduzione nativa');
             });
-            // Crea un wrapper minimale senza funzionalità avanzate
+            
             mobilePlayer = createNativeWrapper(videoElement);
+            trackVideoProgressMobile(id, type, videoElement, season, episode);
         }
         
     } catch (error) {
@@ -314,11 +310,8 @@ async function playItemMobile(id, type, season = null, episode = null) {
     }
 }
 
-// ============ WRAPPER COMPATIBILE CON VIDEO.JS ============
+// ============ WRAPPER COMPATIBILE (emula oggetto Video.js) ============
 
-/**
- * Crea un oggetto che emula le proprietà di Video.js usate dal codice esistente.
- */
 function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
     // Mappa le tracce audio HLS.js in oggetti stile Video.js
     const audioTracksList = [];
@@ -382,7 +375,6 @@ function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
                 },
                 BANDWIDTH: level.bitrate || 0
             },
-            // Altri campi utili
             height: level.height,
             width: level.width,
             bitrate: level.bitrate
@@ -393,30 +385,25 @@ function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
     
     // Esponi i metodi richiesti
     return {
-        // Proprietà usate dal codice
         video: videoElement,
         hls: hlsInstance,
         
-        // Metodo dispose per pulizia
         dispose: () => {
             if (hlsInstance) {
                 hlsInstance.destroy();
             }
-            // Rimuovi eventi
             videoElement.pause();
             videoElement.removeAttribute('src');
             videoElement.load();
         },
         
-        // audioTracks() restituisce un oggetto array-like con metodo length e accesso indicizzato
         audioTracks: () => {
             updateAudioTracks();
-            const tracks = audioTracksList.slice(); // copia
+            const tracks = audioTracksList.slice();
             tracks.length = audioTracksList.length;
             return tracks;
         },
         
-        // textTracks() simile
         textTracks: () => {
             updateTextTracks();
             const tracks = textTracksList.slice();
@@ -424,22 +411,16 @@ function createVideoJsCompatibleWrapper(videoElement, hlsInstance) {
             return tracks;
         },
         
-        // Oggetto tech_ con vhs
         tech_: {
             vhs: vhsMock
         },
         
-        // Trigger di eventi (utile per alcune funzioni)
         trigger: (eventName) => {
-            // Emula il trigger di Video.js, per ora vuoto
-            // console.log('trigger richiesto:', eventName);
+            // Emula il trigger di Video.js (non serve, mantenuto per compatibilità)
         }
     };
 }
 
-/**
- * Wrapper minimale per browser che non supportano HLS.js (riproduzione nativa).
- */
 function createNativeWrapper(videoElement) {
     return {
         video: videoElement,
@@ -460,10 +441,7 @@ function createNativeWrapper(videoElement) {
     };
 }
 
-// ============ FUNZIONI DI ESTRAZIONE QUALITÀ / AUDIO / SOTTOTITOLI (ADATTATE) ============
-
-// Queste funzioni ora utilizzano il wrapper mobilePlayer invece dell'oggetto Video.js originale.
-// Il resto della logica è identico, solo i percorsi per ottenere i dati cambiano.
+// ============ GESTIONE QUALITÀ / AUDIO / SOTTOTITOLI ============
 
 function extractAvailableQualities() {
     return new Promise((resolve) => {
@@ -474,7 +452,6 @@ function extractAvailableQualities() {
             attempts++;
             
             try {
-                // Usa il nostro wrapper
                 if (!mobilePlayer || !mobilePlayer.tech_ || !mobilePlayer.tech_.vhs) {
                     if (attempts < maxAttempts) {
                         setTimeout(checkVhs, 500);
@@ -533,10 +510,6 @@ function extractAvailableQualities() {
                 
                 updateQualitySelector();
                 
-                if (availableQualities.length > 0) {
-                    // Eventuale refresh plugin (non serve più)
-                }
-                
                 resolve(availableQualities);
                 
             } catch (error) {
@@ -570,7 +543,6 @@ function updateQualitySelector() {
         qualitySelect.appendChild(option);
     });
     
-    // Imposta qualità corrente
     if (mobilePlayer && mobilePlayer.hls) {
         const currentLevel = mobilePlayer.hls.currentLevel;
         if (currentLevel >= 0 && currentLevel < availableQualities.length) {
@@ -591,12 +563,10 @@ function changeMobileQuality(qualityIndex) {
     try {
         if (qualityIndex === 'auto') {
             mobilePlayer.hls.currentLevel = -1;
-            // console.log('Qualità impostata su: Auto');
         } else {
             const index = parseInt(qualityIndex);
             if (!isNaN(index) && index >= 0 && index < availableQualities.length) {
                 mobilePlayer.hls.currentLevel = index;
-                // console.log(`Qualità cambiata a: ${availableQualities[index].label}`);
             }
         }
     } catch (error) {
@@ -669,8 +639,7 @@ function changeMobileAudio(audioIndex) {
         const index = parseInt(audioIndex);
         if (!isNaN(index) && index >= 0 && index < mobilePlayer.hls.audioTracks.length) {
             mobilePlayer.hls.audioTrack = index;
-            // console.log(`Audio cambiato a: ${availableAudioTracks[index].label}`);
-            updateAudioSelector(); // aggiorna spunta
+            updateAudioSelector();
         }
     } catch (error) {
         console.error('Errore cambio audio:', error);
@@ -751,11 +720,9 @@ function changeMobileSubtitle(subtitleId) {
         const id = parseInt(subtitleId);
         
         if (id === -1) {
-            mobilePlayer.hls.subtitleTrack = -1; // disabilita
-            // console.log('Sottotitoli disabilitati');
+            mobilePlayer.hls.subtitleTrack = -1;
         } else {
             mobilePlayer.hls.subtitleTrack = id;
-            // console.log(`Sottotitoli attivati: ${availableSubtitles.find(s => s.id === id)?.label}`);
         }
         
         updateSubtitleSelector();
@@ -764,7 +731,6 @@ function changeMobileSubtitle(subtitleId) {
     }
 }
 
-// ============ FUNZIONI DI REFRESH (invariate) ============
 function refreshMobilePlayerControls() {
     setTimeout(() => {
         extractAvailableQualities();
@@ -797,15 +763,180 @@ function showMobileSubtitleSelector() {
     }
 }
 
-// ============ MODIFICHE A closePlayerMobile e cleanup ============
-// (Assicurarsi che chiamino hls.destroy() se presente)
+// ============ GESTIONE STAGIONI ED EPISODI ============
+async function loadTVSeasonsMobile(tmdbId) {
+    try {
+        const details = await fetchTMDB(`tv/${tmdbId}`);
+        currentMobileSeasons = details.seasons || [];
+        
+        const seasonSelect = document.getElementById('mobile-season-select');
+        const episodesList = document.getElementById('mobile-episodes-list');
+        
+        if (!seasonSelect || !episodesList) return;
+        
+        seasonSelect.innerHTML = '';
+        
+        // FILTRA: Rimuovi le stagioni con season_number = 0
+        const validSeasons = currentMobileSeasons.filter(season => season.season_number > 0);
+        
+        validSeasons.forEach((season, index) => {
+            const option = document.createElement('option');
+            option.value = season.season_number;
+            option.textContent = `Stagione ${season.season_number} (${season.episode_count} episodi)`;
+            seasonSelect.appendChild(option);
+        });
+        
+        if (validSeasons.length > 0) {
+            const firstSeasonNumber = validSeasons[0].season_number;
+            await loadSeasonEpisodesMobile(tmdbId, firstSeasonNumber);
+        } else {
+            console.warn("Nessuna stagione valida trovata, provo con la stagione 1");
+            await loadSeasonEpisodesMobile(tmdbId, 1);
+        }
+        
+        seasonSelect.onchange = function() {
+            const seasonNumber = parseInt(this.value);
+            loadSeasonEpisodesMobile(tmdbId, seasonNumber);
+        };
+        
+    } catch (error) {
+        console.error('Errore caricamento stagioni:', error);
+    }
+}
 
+async function loadSeasonEpisodesMobile(tmdbId, seasonNumber) {
+    try {
+        const episodesList = document.getElementById('mobile-episodes-list');
+        if (!episodesList) return;
+        
+        episodesList.innerHTML = '<div class="mobile-episode-item">Caricamento episodi...</div>';
+        
+        const seasonData = await fetchTMDB(`tv/${tmdbId}/season/${seasonNumber}`);
+        const episodes = seasonData.episodes || [];
+        episodesList.innerHTML = '';
+        
+        // FILTRA: Rimuovi episodi con episode_number = 0
+        const validEpisodes = episodes.filter(episode => episode.episode_number > 0);
+        
+        validEpisodes.forEach(episode => {
+            const episodeItem = document.createElement('div');
+            episodeItem.className = 'mobile-episode-item';
+            episodeItem.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>Episodio ${episode.episode_number}</strong>
+                        <div style="font-size: 12px; color: #aaa;">${episode.name || 'Senza titolo'}</div>
+                        ${episode.overview ? `<div style="font-size: 11px; margin-top: 5px; opacity: 0.8;">${episode.overview.substring(0, 100)}...</div>` : ''}
+                    </div>
+                    <button class="mobile-control-btn" onclick="playTVEpisodeMobile(${tmdbId}, ${seasonNumber}, ${episode.episode_number})">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+            `;
+            
+            episodeItem.onclick = (e) => {
+                if (!e.target.closest('button')) {
+                    playTVEpisodeMobile(tmdbId, seasonNumber, episode.episode_number);
+                }
+            };
+            
+            episodesList.appendChild(episodeItem);
+        });
+        
+        if (validEpisodes.length === 0) {
+            episodesList.innerHTML = '<div class="mobile-episode-item">Nessun episodio disponibile</div>';
+        }
+        
+    } catch (error) {
+        console.error('Errore caricamento episodi:', error);
+        showMobileError('Errore nel caricamento degli episodi');
+    }
+}
+
+function playTVEpisodeMobile(tmdbId, seasonNumber, episodeNumber) {
+    // console.log(`Riproduzione episodio S${seasonNumber}E${episodeNumber}`);
+    
+    const episodeTitle = `Stagione ${seasonNumber}, Episodio ${episodeNumber}`;
+    document.getElementById('mobile-player-title').textContent = episodeTitle;
+    
+    playItemMobile(tmdbId, 'tv', seasonNumber, episodeNumber);
+}
+
+// ============ TRACKING PROGRESSO ============
+function trackVideoProgressMobile(tmdbId, mediaType, videoElement, season = null, episode = null) {
+    let storageKey = `videoTime_${mediaType}_${tmdbId}`;
+    if (mediaType === "tv" && season !== null && episode !== null) {
+        storageKey += `_S${season}_E${episode}`;
+    }
+    
+    // Riprendi da tempo salvato
+    const savedTime = getFromStorage(storageKey);
+    if (savedTime && parseFloat(savedTime) > 60) {
+        videoElement.currentTime = parseFloat(savedTime);
+    }
+    
+    // Salva progresso ogni 5 secondi
+    const saveInterval = setInterval(() => {
+        if (!videoElement.paused && !videoElement.ended) {
+            const currentTime = videoElement.currentTime;
+            if (currentTime > 60) {
+                saveToStorage(storageKey, currentTime, 365);
+            }
+        }
+    }, 5000);
+    
+    // Pulisci intervallo quando il video finisce
+    videoElement.addEventListener('ended', () => {
+        clearInterval(saveInterval);
+        localStorage.removeItem(storageKey);
+    });
+    
+    // Gestione uscita dal player
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearInterval(saveInterval);
+        }
+    });
+
+    videoElement.addEventListener('timeupdate', () => {
+        if (currentMobileSection === 'continua') {
+            updateContinuaVisione();
+        }
+    });
+    
+    // Aggiungi alla lista di cleanup
+    cleanupFunctions.push(() => {
+        clearInterval(saveInterval);
+    });
+}
+
+// ============ UTILITY LINGUE ============
+function getLanguageName(code) {
+    const languages = {
+        'it': 'Italiano',
+        'en': 'English',
+        'es': 'Español',
+        'fr': 'Français',
+        'de': 'Deutsch',
+        'pt': 'Português',
+        'ru': 'Русский',
+        'zh': '中文',
+        'ja': '日本語',
+        'ko': '한국어',
+        'ar': 'العربية',
+        'hi': 'हिन्दी',
+    };
+    
+    return languages[code] || code;
+}
+
+// ============ CHIUSURA E PULIZIA ============
 function closePlayerMobile() {
     // console.log("Chiusura player mobile...");
     cleanupMobilePlayer();
 
     if (mobilePlayer) {
-        mobilePlayer.dispose(); // ora dispose distrugge anche hls
+        mobilePlayer.dispose();
         mobilePlayer = null;
     }
     if (hls) {
@@ -815,8 +946,6 @@ function closePlayerMobile() {
     
     currentMobileItem = null;
     currentMobileSeasons = [];
-    
-    removeVideoJsXhrHook(); // eventuale, se ancora usato
     
     const videoElement = document.getElementById('mobile-player-video');
     if (videoElement) {
@@ -871,151 +1000,9 @@ function cleanupMobilePlayer() {
     availableAudioTracks = [];
     availableSubtitles = [];
     availableQualities = [];
-    
-    removeVideoJsXhrHook();
 }
 
-// ============ VIDEO.JS CORS HOOK ============
-const xhrRequestHook = (options) => {
-    const originalUri = options.uri;
-    
-    // console.log('📱 MOBILE - xhrRequestHook - URL originale:', originalUri);
-    
-    if (!originalUri) return options;
-    
-    // Gestione speciale per chiavi di crittografia
-    if (originalUri.includes('/storage/enc.key') || originalUri.includes('.key')) {
-        // console.log('📱 MOBILE - Rilevata richiesta chiave di crittografia');
-        
-        // Usa l'URL diretto senza proxy per le chiavi
-        const directUrl = originalUri
-            .replace(/^https:\/\/[^\/]+\//, 'https://vixsrc.to/')
-            .replace(/^http:\/\/[^\/]+\//, 'http://vixsrc.to/');
-        
-        // console.log('📱 MOBILE - URL chiave diretto:', directUrl);
-        
-        options.uri = directUrl;
-        
-        // Rimuovi header non sicuri che causano errori
-        delete options.headers;
-        
-        // Configurazione CORS minima
-        options.cors = true;
-        options.withCredentials = false;
-        
-        return options;
-    }
-    
-    // Per segmenti media (.ts, .m3u8), usa URL diretto
-    if (originalUri.includes('.ts') || originalUri.includes('.m3u8')) {
-        // console.log('📱 MOBILE - Segmento media, uso URL diretto');
-        options.uri = originalUri;
-        
-        // Configurazione per media
-        options.cors = true;
-        options.withCredentials = false;
-        
-        // Non impostare header non sicuri
-        const safeHeaders = {};
-        if (options.headers) {
-            // Filtra solo header sicuri
-            const safeHeaderKeys = ['Accept', 'Accept-Language', 'Cache-Control'];
-            safeHeaderKeys.forEach(key => {
-                if (options.headers[key]) {
-                    safeHeaders[key] = options.headers[key];
-                }
-            });
-        }
-        
-        options.headers = safeHeaders;
-        
-        return options;
-    }
-    
-    // Per altri URL, mantieni il proxy ma senza header non sicuri
-    if (originalUri.includes('corsproxy.io') || 
-        originalUri.includes('allorigins.win') || 
-        originalUri.includes('api.codetabs.com')) {
-        // console.log('📱 MOBILE - URL già proxyato');
-        
-        // Pulisci header non sicuri
-        delete options.headers;
-        
-        return options;
-    }
-    
-    // Default: applica proxy ma senza header problematici
-    // console.log('📱 MOBILE - Applico proxy CORS (senza header non sicuri)');
-    const proxyUrl = applyCorsProxy(originalUri);
-    options.uri = proxyUrl;
-    
-    // Rimuovi header non sicuri
-    delete options.headers;
-    
-    return options;
-};
-
-// Aggiungi questa funzione per gestire le richieste di chiavi
-function fetchEncryptionKey(keyUrl) {
-    return new Promise(async (resolve, reject) => {
-        try {
-            // console.log('📱 MOBILE - Tentativo di fetch chiave:', keyUrl);
-            
-            // Prova diverse strategie
-            const strategies = [
-                () => fetch(keyUrl, { mode: 'no-cors' }),
-                () => fetch(keyUrl.replace('https://', 'http://'), { mode: 'no-cors' }),
-                () => fetch(applyCorsProxy(keyUrl)),
-                () => fetch(keyUrl, { 
-                    headers: { 
-                        'Origin': 'https://vixsrc.to',
-                        'Referer': 'https://vixsrc.to/'
-                    }
-                })
-            ];
-            
-            for (let strategy of strategies) {
-                try {
-                    const response = await strategy();
-                    if (response.ok || response.type === 'opaque') {
-                        const arrayBuffer = await response.arrayBuffer();
-                        // console.log('📱 MOBILE - Chiave ottenuta, dimensione:', arrayBuffer.byteLength);
-                        resolve(arrayBuffer);
-                        return;
-                    }
-                } catch (e) {
-                    console.warn('📱 MOBILE - Strategia fallita:', e.message);
-                }
-            }
-            
-            reject(new Error('Impossibile ottenere la chiave di crittografia'));
-            
-        } catch (error) {
-            reject(error);
-        }
-    });
-}
-
-function setupVideoJsXhrHook() {
-    if (typeof videojs === "undefined" || !videojs.Vhs) {
-        return;
-    }
-
-    if (requestHookInstalled) {
-        return;
-    }
-
-    videojs.Vhs.xhr.onRequest(xhrRequestHook);
-    requestHookInstalled = true;
-}
-
-function removeVideoJsXhrHook() {
-    if (typeof videojs !== "undefined" && videojs.Vhs && requestHookInstalled) {
-        videojs.Vhs.xhr.offRequest(xhrRequestHook);
-        requestHookInstalled = false;
-    }
-}
-
+// ============ APERTURA IN PLAYER ESTERNO ============
 function openInExternalPlayer(tmdbId, mediaType, season, episode) {
     let externalUrl;
     
@@ -1025,6 +1012,5 @@ function openInExternalPlayer(tmdbId, mediaType, season, episode) {
         externalUrl = `https://${VIXSRC_URL}/tv/${tmdbId}/${season || 1}/${episode || 1}`;
     }
     
-    // Apri in nuova finestra
     window.open(applyCorsProxy(externalUrl), '_blank');
 }
