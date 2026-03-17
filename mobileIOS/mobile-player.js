@@ -157,17 +157,40 @@ async function playItemMobile(id, type, season = null, episode = null) {
     }, 20000);
     
     try {
-        if (hls) hls.destroy();
+        // Distrugge player precedente
+        if (hls) {
+            hls.destroy();
+            hls = null;
+        }
         
-        const videoElement = document.getElementById('mobile-player-video');
-        if (!videoElement) throw new Error("Elemento video non trovato");
+        // Ottieni o crea l'elemento video
+        const videoContainer = document.querySelector('.mobile-video-container');
+        let videoElement = document.getElementById('mobile-player-video');
         
+        if (!videoElement) {
+            videoElement = document.createElement('video');
+            videoElement.id = 'mobile-player-video';
+            videoElement.className = 'hls-video';
+            videoElement.setAttribute('controls', '');
+            videoElement.setAttribute('preload', 'auto');
+            videoElement.setAttribute('playsinline', '');
+            videoElement.setAttribute('webkit-playsinline', '');
+            videoElement.setAttribute('x5-playsinline', '');
+            videoElement.setAttribute('crossorigin', 'anonymous');
+            videoContainer.insertBefore(videoElement, videoContainer.firstChild);
+        }
+        
+        // Ottieni stream M3U8
         const streamData = await getDirectStreamMobile(id, type === 'movie', season, episode);
-        if (!streamData?.m3u8Url) throw new Error("URL non valido");
+        currentStreamData = streamData;
+        
+        if (!streamData || !streamData.m3u8Url) {
+            throw new Error('Impossibile ottenere lo stream');
+        }
         
         let m3u8Url = streamData.m3u8Url;
         
-        // Forza HTTPS se necessario
+        // Forza HTTPS se la pagina è in HTTPS
         if (window.location.protocol === 'https:' && m3u8Url.startsWith('http:')) {
             m3u8Url = m3u8Url.replace('http:', 'https:');
         }
@@ -178,28 +201,32 @@ async function playItemMobile(id, type, season = null, episode = null) {
         
         // Se c'è un proxy, applichiamolo all'URL del manifest
         let finalUrl = m3u8Url;
-        if (proxyBase && !proxyBase.includes('nessun')) {
+        if (proxyBase && !proxyBase.includes('nessun') && proxyBase !== '') {
             finalUrl = proxyBase + m3u8Url;
         }
-        
-        // showMobileInfo(`Caricamento...`, 3000); // opzionale, se showMobileInfo non esiste, commenta
         
         console.log('URL finale M3U8:', finalUrl);
         
         if (Hls.isSupported()) {
             hls = new Hls({
-                xhrSetup: (xhr) => { xhr.withCredentials = false; }
+                xhrSetup: (xhr) => { xhr.withCredentials = false; },
+                manifestLoadingTimeOut: 10000,
+                levelLoadingTimeOut: 10000,
+                fragLoadingTimeOut: 20000,
+                debug: false
             });
             
             hls.attachMedia(videoElement);
             
             hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                console.log('HLS.js: MEDIA_ATTACHED');
                 hls.loadSource(finalUrl);
             });
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 clearTimeout(loadingTimeout);
                 showMobileLoading(false);
+                console.log('HLS.js: MANIFEST_PARSED', hls.levels);
                 
                 extractQualitiesFromHls();
                 extractAudioFromHls();
@@ -224,42 +251,64 @@ async function playItemMobile(id, type, season = null, episode = null) {
                             errorMsg += ` URL: ${data.url}`;
                         }
                     } else {
-                        errorMsg += data.details;
+                        errorMsg += data.details || 'errore sconosciuto.';
                     }
                     
                     showMobileError(errorMsg);
-                    
-                    // Suggerisci di cambiare proxy
-                    if (data.url && data.url.includes(proxyBase)) {
-                        showMobileInfo("Prova a selezionare un proxy diverso", 5000);
-                    }
                     
                     hls.destroy();
                 }
             });
             
+            mobilePlayer = {
+                hls: hls,
+                dispose: () => {
+                    if (hls) hls.destroy();
+                }
+            };
+            
             trackVideoProgressMobile(id, type, videoElement, season, episode);
             
         } else {
-            // Fallback nativo
+            // Fallback nativo (Safari)
             videoElement.src = finalUrl;
+            
+            const nativeTimeout = setTimeout(() => {
+                showMobileLoading(false);
+                showMobileError("Timeout: il video nativo non risponde.");
+            }, 15000);
+            
             videoElement.addEventListener('loadedmetadata', () => {
+                clearTimeout(nativeTimeout);
                 clearTimeout(loadingTimeout);
                 showMobileLoading(false);
                 videoElement.play().catch(() => {});
             });
-            videoElement.addEventListener('error', (e) => {
+            
+            videoElement.addEventListener('error', () => {
+                clearTimeout(nativeTimeout);
                 clearTimeout(loadingTimeout);
                 showMobileLoading(false);
-                showMobileError('Errore nativo. Prova un proxy diverso.');
+                showMobileError('Errore di riproduzione nativa. Prova con un proxy diverso.');
             });
+            
+            mobilePlayer = {
+                video: videoElement,
+                dispose: () => {
+                    videoElement.pause();
+                    videoElement.removeAttribute('src');
+                    videoElement.load();
+                }
+            };
+            
             trackVideoProgressMobile(id, type, videoElement, season, episode);
         }
         
     } catch (error) {
         clearTimeout(loadingTimeout);
+        console.error('Errore riproduzione:', error);
         showMobileLoading(false);
-        showMobileError(`Errore: ${error.message}`);
+        showMobileError(`Impossibile riprodurre: ${error.message}`);
     }
 }
 
