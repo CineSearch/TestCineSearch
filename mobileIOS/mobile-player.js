@@ -182,7 +182,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
             finalUrl = proxyBase + m3u8Url;
         }
         
-        showMobileInfo(`Caricamento...`, 3000); // opzionale, se showMobileInfo non esiste, commenta
+        // showMobileInfo(`Caricamento...`, 3000); // opzionale, se showMobileInfo non esiste, commenta
         
         console.log('URL finale M3U8:', finalUrl);
         
