@@ -710,7 +710,11 @@ function cleanupMobilePlayer() {
 
 // ============ APERTURA IN PLAYER ESTERNO ============
 function openInExternalPlayer(tmdbId, mediaType, season, episode) {
-    let externalUrl = `https://${VIXSRC_URL}/${mediaType === 'movie' ? 'movie' : 'tv'}/${tmdbId}`;
-    if (mediaType !== 'movie') externalUrl += `/${season || 1}/${episode || 1}`;
+    let externalUrl;
+    if (mediaType === 'movie') {
+        externalUrl = `https://${VIXSRC_URL}/movie/${tmdbId}`;
+    } else {
+        externalUrl = `https://${VIXSRC_URL}/tv/${tmdbId}/${season || 1}/${episode || 1}`;
+    }
     window.open(applyCorsProxy(externalUrl), '_blank');
 }
