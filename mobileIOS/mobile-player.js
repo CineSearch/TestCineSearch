@@ -1,4 +1,4 @@
-// mobile-player.js - Gestione player video con HLS.js (COMPLETO, SENZA PROXY PERSONALIZZATO)
+// mobile-player.js - Gestione player video con HLS.js (VERSIONE FINALE)
 
 // ============ VARIABILI PLAYER ============
 let currentMobileItem = null;
