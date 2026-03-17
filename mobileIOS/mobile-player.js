@@ -10,6 +10,7 @@ let availableAudioTracks = [];
 let availableSubtitles = [];
 let availableQualities = [];
 let cleanupFunctions = [];
+const VIXSRC_URL = "vixsrc.to"; // Sostituisci con il tuo dominio
 
 // ============ PLAYER FUNCTIONS ============
 async function openMobilePlayer(item) {
