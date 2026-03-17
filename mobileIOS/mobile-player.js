@@ -154,7 +154,9 @@ async function playItemMobile(id, type, season = null, episode = null) {
         
         if (Hls.isSupported()) {
             // ========== LOADER PERSONALIZZATO PER PROXY CORS ==========
-            const CORS_PROXY = document.getElementById('mobile-cors-select')?.value || 'https://corsproxy.io/?';
+            // Usa cors-anywhere come proxy predefinito (funziona meglio con URL assoluti)
+            const defaultProxy = 'https://cors-anywhere.herokuapp.com/';
+            const selectedProxy = document.getElementById('mobile-cors-select')?.value || defaultProxy;
             
             class CorsLoader extends Hls.DefaultConfig.loader {
                 constructor(config) {
@@ -163,9 +165,14 @@ async function playItemMobile(id, type, season = null, episode = null) {
                     this.load = function(context, config, callbacks) {
                         // Applica il proxy a TUTTE le richieste (manifest, segmenti, chiavi)
                         if (context.url && !context.url.startsWith('blob:')) {
-                            // Evita di riapplicare il proxy se l'URL è già proxyato
-                            if (!context.url.includes(CORS_PROXY)) {
-                                context.url = CORS_PROXY + encodeURIComponent(context.url);
+                            // Evita di riapplicare il proxy se l'URL contiene già il proxy
+                            if (!context.url.includes(selectedProxy) && !context.url.includes('cors-anywhere')) {
+                                // Per cors-anywhere, non usare encodeURIComponent, concatena direttamente
+                                if (selectedProxy.includes('cors-anywhere') || selectedProxy.includes('herokuapp')) {
+                                    context.url = selectedProxy + context.url;
+                                } else {
+                                    context.url = selectedProxy + encodeURIComponent(context.url);
+                                }
                             }
                         }
                         load(context, config, callbacks);
@@ -176,15 +183,13 @@ async function playItemMobile(id, type, season = null, episode = null) {
             hls = new Hls({
                 loader: CorsLoader,
                 xhrSetup: (xhr, url) => {
-                    // Disabilita credenziali per chiavi
-                    if (url.includes('.key') || url.includes('enc.key')) {
-                        xhr.withCredentials = false;
-                    }
+                    // Disabilita credenziali per tutte le richieste (evita problemi CORS)
+                    xhr.withCredentials = false;
                 },
                 manifestLoadingTimeOut: 10000,
                 levelLoadingTimeOut: 10000,
                 fragLoadingTimeOut: 20000,
-                debug: true // Attiva i log per debug (poi puoi toglierli)
+                debug: false
             });
             
             hls.attachMedia(videoElement);
@@ -211,7 +216,15 @@ async function playItemMobile(id, type, season = null, episode = null) {
             hls.on(Hls.Events.ERROR, (event, data) => {
                 console.error('HLS.js error:', data);
                 
-                // Mostra un messaggio di errore dettagliato
+                // Gestione specifica per errore 401 (Unauthorized)
+                if (data.fatal && data.response && data.response.code === 401) {
+                    clearTimeout(loadingTimeout);
+                    showMobileLoading(false);
+                    showMobileError('Errore 401: token non valido o scaduto. Riprova più tardi.');
+                    hls.destroy();
+                    return;
+                }
+                
                 if (data.fatal) {
                     clearTimeout(loadingTimeout);
                     showMobileLoading(false);
@@ -235,7 +248,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
                 }
             });
             
-            mobilePlayer = createWrapper(videoElement, hls);
+            mobilePlayer = createHlsCompatibleWrapper(videoElement, hls);
             
             videoElement.addEventListener('loadedmetadata', () => {
                 refreshMobilePlayerControls();
