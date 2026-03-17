@@ -162,8 +162,9 @@ async function playItemMobile(id, type, season = null, episode = null) {
             hls.destroy();
             hls = null;
         }
+        mobilePlayer = null;
         
-        // Ottieni o crea l'elemento video
+        // Assicura che l'elemento video esista
         const videoContainer = document.querySelector('.mobile-video-container');
         let videoElement = document.getElementById('mobile-player-video');
         
@@ -199,110 +200,119 @@ async function playItemMobile(id, type, season = null, episode = null) {
         const corsSelect = document.getElementById('mobile-cors-select');
         const proxyBase = corsSelect ? corsSelect.value : '';
         
-        // Se c'è un proxy, applichiamolo all'URL del manifest
-        let finalUrl = m3u8Url;
-        if (proxyBase && !proxyBase.includes('nessun') && proxyBase !== '') {
-            finalUrl = proxyBase + m3u8Url;
+        // Se non c'è proxy, usa direttamente l'URL
+        if (!proxyBase || proxyBase.includes('nessun')) {
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    xhrSetup: (xhr) => { xhr.withCredentials = false; }
+                });
+                hls.loadSource(m3u8Url);
+                hls.attachMedia(videoElement);
+            } else {
+                videoElement.src = m3u8Url;
+            }
+        } else {
+            // Con proxy: estrai il dominio originale per gli URL relativi
+            let originalDomain = '';
+            try {
+                const urlObj = new URL(m3u8Url);
+                originalDomain = urlObj.origin; // es. https://vixsrc.co
+            } catch (e) {
+                console.warn('URL non valido, impossibile determinare il dominio base');
+            }
+            
+            // Loader personalizzato che applica il proxy a tutte le richieste
+            class ProxyLoader extends Hls.DefaultConfig.loader {
+                constructor(config) {
+                    super(config);
+                    const load = this.load.bind(this);
+                    this.load = function(context, config, callbacks) {
+                        if (context.url && !context.url.startsWith('blob:')) {
+                            let urlToProxy = context.url;
+                            
+                            // Se l'URL è relativo, prova a renderlo assoluto usando originalDomain
+                            if (originalDomain && !urlToProxy.startsWith('http')) {
+                                if (urlToProxy.startsWith('/')) {
+                                    urlToProxy = originalDomain + urlToProxy;
+                                } else {
+                                    urlToProxy = originalDomain + '/' + urlToProxy;
+                                }
+                            }
+                            
+                            // Applica il proxy
+                            context.url = proxyBase + urlToProxy;
+                        }
+                        load(context, config, callbacks);
+                    };
+                }
+            }
+            
+            if (Hls.isSupported()) {
+                hls = new Hls({
+                    loader: ProxyLoader,
+                    xhrSetup: (xhr) => { xhr.withCredentials = false; }
+                });
+                hls.loadSource(m3u8Url); // il loader modificherà l'URL automaticamente
+                hls.attachMedia(videoElement);
+            } else {
+                // Fallback nativo (prova con URL proxyato, ma potrebbe non gestire i segmenti relativi)
+                videoElement.src = proxyBase + m3u8Url;
+            }
         }
         
-        console.log('URL finale M3U8:', finalUrl);
-        
-        if (Hls.isSupported()) {
-            hls = new Hls({
-                xhrSetup: (xhr) => { xhr.withCredentials = false; },
-                manifestLoadingTimeOut: 10000,
-                levelLoadingTimeOut: 10000,
-                fragLoadingTimeOut: 20000,
-                debug: false
-            });
-            
-            hls.attachMedia(videoElement);
-            
-            hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-                console.log('HLS.js: MEDIA_ATTACHED');
-                hls.loadSource(finalUrl);
-            });
-            
+        // Gestione eventi HLS.js
+        if (hls) {
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
                 clearTimeout(loadingTimeout);
                 showMobileLoading(false);
-                console.log('HLS.js: MANIFEST_PARSED', hls.levels);
-                
                 extractQualitiesFromHls();
                 extractAudioFromHls();
                 extractSubtitlesFromHls();
-                
                 videoElement.play().catch(() => {});
             });
             
             hls.on(Hls.Events.ERROR, (event, data) => {
                 console.error('HLS.js error:', data);
-                
                 if (data.fatal) {
                     clearTimeout(loadingTimeout);
                     showMobileLoading(false);
-                    
                     let errorMsg = 'Errore di riproduzione: ';
                     if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
                         errorMsg += 'problema di rete.';
-                        if (data.response) {
-                            errorMsg += ` Status: ${data.response.code}`;
-                        } else if (data.url) {
-                            errorMsg += ` URL: ${data.url}`;
-                        }
+                        if (data.response) errorMsg += ` Status: ${data.response.code}`;
+                        else if (data.url) errorMsg += ` URL: ${data.url}`;
                     } else {
                         errorMsg += data.details || 'errore sconosciuto.';
                     }
-                    
                     showMobileError(errorMsg);
-                    
                     hls.destroy();
                 }
             });
-            
-            mobilePlayer = {
-                hls: hls,
-                dispose: () => {
-                    if (hls) hls.destroy();
-                }
-            };
-            
-            trackVideoProgressMobile(id, type, videoElement, season, episode);
-            
         } else {
-            // Fallback nativo (Safari)
-            videoElement.src = finalUrl;
-            
-            const nativeTimeout = setTimeout(() => {
-                showMobileLoading(false);
-                showMobileError("Timeout: il video nativo non risponde.");
-            }, 15000);
-            
+            // Fallback nativo
             videoElement.addEventListener('loadedmetadata', () => {
-                clearTimeout(nativeTimeout);
                 clearTimeout(loadingTimeout);
                 showMobileLoading(false);
                 videoElement.play().catch(() => {});
             });
-            
             videoElement.addEventListener('error', () => {
-                clearTimeout(nativeTimeout);
                 clearTimeout(loadingTimeout);
                 showMobileLoading(false);
-                showMobileError('Errore di riproduzione nativa. Prova con un proxy diverso.');
+                showMobileError('Errore di riproduzione nativa.');
             });
-            
-            mobilePlayer = {
-                video: videoElement,
-                dispose: () => {
-                    videoElement.pause();
-                    videoElement.removeAttribute('src');
-                    videoElement.load();
-                }
-            };
-            
-            trackVideoProgressMobile(id, type, videoElement, season, episode);
         }
+        
+        mobilePlayer = {
+            hls: hls,
+            dispose: () => {
+                if (hls) hls.destroy();
+                videoElement.pause();
+                videoElement.removeAttribute('src');
+                videoElement.load();
+            }
+        };
+        
+        trackVideoProgressMobile(id, type, videoElement, season, episode);
         
     } catch (error) {
         clearTimeout(loadingTimeout);
