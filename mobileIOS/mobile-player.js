@@ -151,47 +151,115 @@ async function getDirectStreamMobile(tmdbId, isMovie, season = null, episode = n
 async function playItemMobile(id, type, season = null, episode = null) {
     showMobileLoading(true, "Preparazione video...");
     
+    const loadingTimeout = setTimeout(() => {
+        showMobileLoading(false);
+        showMobileError("Timeout: il video impiega troppo tempo a caricarsi.");
+    }, 20000);
+    
     try {
         if (hls) hls.destroy();
         
+        const videoElement = document.getElementById('mobile-player-video');
+        if (!videoElement) throw new Error("Elemento video non trovato");
+        
         const streamData = await getDirectStreamMobile(id, type === 'movie', season, episode);
+        if (!streamData?.m3u8Url) throw new Error("URL non valido");
+        
         let m3u8Url = streamData.m3u8Url;
         
-        // Forza HTTPS
+        // Forza HTTPS se necessario
         if (window.location.protocol === 'https:' && m3u8Url.startsWith('http:')) {
             m3u8Url = m3u8Url.replace('http:', 'https:');
         }
         
-        const video = document.getElementById('mobile-player-video');
+        // Ottieni il proxy selezionato dall'utente
+        const corsSelect = document.getElementById('mobile-cors-select');
+        const proxyBase = corsSelect ? corsSelect.value : '';
+        
+        // Se c'è un proxy, applichiamolo all'URL del manifest
+        let finalUrl = m3u8Url;
+        if (proxyBase && !proxyBase.includes('nessun')) {
+            finalUrl = proxyBase + m3u8Url;
+        }
+        
+        showMobileInfo(`Caricamento...`, 3000); // opzionale, se showMobileInfo non esiste, commenta
+        
+        console.log('URL finale M3U8:', finalUrl);
         
         if (Hls.isSupported()) {
-            hls = new Hls();
-            hls.loadSource(m3u8Url);
-            hls.attachMedia(video);
+            hls = new Hls({
+                xhrSetup: (xhr) => { xhr.withCredentials = false; }
+            });
+            
+            hls.attachMedia(videoElement);
+            
+            hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                hls.loadSource(finalUrl);
+            });
             
             hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                clearTimeout(loadingTimeout);
                 showMobileLoading(false);
-                video.play().catch(() => {});
+                
                 extractQualitiesFromHls();
+                extractAudioFromHls();
+                extractSubtitlesFromHls();
+                
+                videoElement.play().catch(() => {});
             });
             
             hls.on(Hls.Events.ERROR, (event, data) => {
-                console.error('Errore HLS:', data);
-                showMobileError('Errore di rete: ' + (data.response?.code || ''));
+                console.error('HLS.js error:', data);
+                
+                if (data.fatal) {
+                    clearTimeout(loadingTimeout);
+                    showMobileLoading(false);
+                    
+                    let errorMsg = 'Errore di riproduzione: ';
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        errorMsg += 'problema di rete.';
+                        if (data.response) {
+                            errorMsg += ` Status: ${data.response.code}`;
+                        } else if (data.url) {
+                            errorMsg += ` URL: ${data.url}`;
+                        }
+                    } else {
+                        errorMsg += data.details;
+                    }
+                    
+                    showMobileError(errorMsg);
+                    
+                    // Suggerisci di cambiare proxy
+                    if (data.url && data.url.includes(proxyBase)) {
+                        showMobileInfo("Prova a selezionare un proxy diverso", 5000);
+                    }
+                    
+                    hls.destroy();
+                }
             });
+            
+            trackVideoProgressMobile(id, type, videoElement, season, episode);
+            
         } else {
-            video.src = m3u8Url;
-            video.addEventListener('loadedmetadata', () => {
+            // Fallback nativo
+            videoElement.src = finalUrl;
+            videoElement.addEventListener('loadedmetadata', () => {
+                clearTimeout(loadingTimeout);
                 showMobileLoading(false);
-                video.play().catch(() => {});
+                videoElement.play().catch(() => {});
             });
+            videoElement.addEventListener('error', (e) => {
+                clearTimeout(loadingTimeout);
+                showMobileLoading(false);
+                showMobileError('Errore nativo. Prova un proxy diverso.');
+            });
+            trackVideoProgressMobile(id, type, videoElement, season, episode);
         }
         
-        trackVideoProgressMobile(id, type, video, season, episode);
-        
     } catch (error) {
+        clearTimeout(loadingTimeout);
         showMobileLoading(false);
-        showMobileError('Errore: ' + error.message);
+        showMobileError(`Errore: ${error.message}`);
     }
 }
 
