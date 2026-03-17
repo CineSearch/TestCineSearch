@@ -235,7 +235,7 @@ async function playItemMobile(id, type, season = null, episode = null) {
                 }
             });
             
-            mobilePlayer = createHlsCompatibleWrapper(videoElement, hls);
+            mobilePlayer = createWrapper(videoElement, hls);
             
             videoElement.addEventListener('loadedmetadata', () => {
                 refreshMobilePlayerControls();
