@@ -77,38 +77,20 @@ const endpoints = {
   popularTV: `tv/popular`,
 };
 
-function applyCorsProxy(url) {
-  const CORS = document.getElementById("cors-select").value;
-  const requiresEncoding = CORS_PROXIES_REQUIRING_ENCODING.some(
-    (proxy) => CORS === proxy
-  );
-  let cleanUrl = url;
-  if (url.includes(CORS)) {
-    if (requiresEncoding) {
-      cleanUrl = decodeURIComponent(url.split(CORS)[1]);
-    } else {
-      cleanUrl = url.split(CORS)[1];
-    }
-  }
-  if (
-    !cleanUrl.startsWith("http://") &&
-    !cleanUrl.startsWith("https://")
-  ) {
-    cleanUrl = resolveUrl(cleanUrl);
-  }
-  if (
-    cleanUrl.startsWith("data:") ||
-    cleanUrl.startsWith("blob:") ||
-    !cleanUrl.startsWith("https://vixsrc.to")
-  ) {
-    return url;
-  }
+// Sostituisci questo URL con l'URL della tua app su Render quando avrai fatto il deploy
+const MY_PROXY_URL = "https://mrnico98onlinetg.altervista.org/proxy.php?url=";
 
-  if (requiresEncoding) {
-    return `https://${CORS}${encodeURIComponent(cleanUrl)}`;
-  } else {
-    return `https://${CORS}${cleanUrl}`;
+function applyCorsProxy(url) {
+  if (!url || !url.startsWith("http")) {
+      return url;
   }
+  return MY_PROXY_URL + encodeURIComponent(url);
+}
+  return MY_PROXY_URL + encodeURIComponent(url);
+}
+  
+  // Costruisci l'URL finale passando attraverso il tuo backend
+  return MY_PROXY_URL + encodeURIComponent(url);
 }
 
 function resolveUrl(url, baseUrl = "https://vixsrc.to") {
