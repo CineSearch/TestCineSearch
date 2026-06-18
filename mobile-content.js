@@ -33,28 +33,19 @@ async function loadMoviesMobile(page = 1) {
         
         grid.innerHTML = '';
         
-        // Carica disponibilità per ogni film
-        const availableMovies = [];
-        for (const movie of data.results) {
+        const movies = (data.results || []).slice(0, ITEMS_PER_PAGE);
+        movies.forEach(movie => {
             movie.media_type = "movie";
-            const isAvailable = await checkAvailabilityOnVixsrc(movie.id, true);
-            
-            if (isAvailable) {
-                grid.appendChild(createMobileCard(movie));
-                availableMovies.push(movie);
-            }
-            
-            if (availableMovies.length >= ITEMS_PER_PAGE) break;
-        }
-        
-        // Aggiorna paginazione
+            grid.appendChild(createMobileCard(movie));
+        });
+
         updateMoviePaginationMobile(data.total_pages, data.total_results);
-        
-        if (availableMovies.length === 0) {
+
+        if (movies.length === 0) {
             grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-film"></i>
-                    <p>Nessun film disponibile trovato</p>
+                    <p>Nessun film trovato</p>
                 </div>
             `;
         }
@@ -108,28 +99,19 @@ async function loadTVMobile(page = 1) {
         
         grid.innerHTML = '';
         
-        // Carica disponibilità per ogni serie
-        const availableTV = [];
-        for (const tv of data.results) {
+        const tvSeries = (data.results || []).slice(0, ITEMS_PER_PAGE);
+        tvSeries.forEach(tv => {
             tv.media_type = "tv";
-            const isAvailable = await checkTvSeriesAvailability(tv.id);
-            
-            if (isAvailable) {
-                grid.appendChild(createMobileCard(tv));
-                availableTV.push(tv);
-            }
-            
-            if (availableTV.length >= ITEMS_PER_PAGE) break;
-        }
-        
-        // Aggiorna paginazione
+            grid.appendChild(createMobileCard(tv));
+        });
+
         updateTVPaginationMobile(data.total_pages, data.total_results);
-        
-        if (availableTV.length === 0) {
+
+        if (tvSeries.length === 0) {
             grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-tv"></i>
-                    <p>Nessuna serie TV disponibile trovata</p>
+                    <p>Nessuna serie TV trovata</p>
                 </div>
             `;
         }
@@ -264,46 +246,19 @@ async function performMobileSearch(query) {
             return;
         }
         
-        // VERIFICA DISPONIBILITÀ PRIMA DI CREARE LE CARD
-        showMobileLoading(true, "Verifica disponibilità...");
-        
-        // Array per contenuti disponibili
-        const availableItems = [];
-        
-        // Controlla disponibilità per i primi 20 risultati
-        const itemsToCheck = filteredResults.slice(0, 20);
-        
-        for (const item of itemsToCheck) {
-            const mediaType = item.media_type || (item.title ? "movie" : "tv");
-            let isAvailable = false;
-            
-            if (mediaType === "movie") {
-                isAvailable = await checkAvailabilityOnVixsrc(item.id, true);
-            } else if (mediaType === "tv") {
-                isAvailable = await checkTvSeriesAvailability(item.id);
-            }
-            
-            if (isAvailable) {
-                item.media_type = mediaType;
-                availableItems.push(item);
-            }
-        }
-        
-        showMobileLoading(false);
-        
-        // CREA SOLO UNA VOLTA LE CARD PER GLI ITEM DISPONIBILI
-        if (availableItems.length === 0) {
+        const items = filteredResults.slice(0, 20);
+        items.forEach(item => {
+            item.media_type = item.media_type || (item.title ? "movie" : "tv");
+            grid.appendChild(createMobileCard(item));
+        });
+
+        if (items.length === 0) {
             grid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-search"></i>
-                    <p>Nessun contenuto disponibile trovato per "${query}"</p>
+                    <p>Nessun risultato trovato per "${query}"</p>
                 </div>
             `;
-        } else {
-            // Crea le card solo una volta
-            availableItems.forEach(item => {
-                grid.appendChild(createMobileCard(item));
-            });
         }
         
     } catch (error) {

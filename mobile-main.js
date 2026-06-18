@@ -1,11 +1,13 @@
+// mobile-main.js - File principale che collega tutto
+
 // ============ INIZIALIZZAZIONE ============
 document.addEventListener('DOMContentLoaded', function() {
     // // console.log('CineSearch Mobile inizializzato');
     initMobileUI();
-    initMobileCors();
     loadMobileHomeData();
     cleanupExpiredStorage();
     
+    // Aggiungi stili per lo spinner
     const style = document.createElement('style');
     style.textContent = `
         @keyframes spin {
@@ -18,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ============ EVENT LISTENERS GLOBALI ============
 document.addEventListener('keydown', function(e) {
+    // Gestione tasti per TV/remote
     const focusedElement = document.activeElement;
     
     if (focusedElement && focusedElement.classList.contains('mobile-card')) {
@@ -34,13 +37,14 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-
+// Esponi funzioni globali necessarie
 window.showHomeMobile = showHomeMobile;
 window.showAllMoviesMobile = showAllMoviesMobile;
 window.showAllTVMobile = showAllTVMobile;
 window.showCategoriesMobile = showCategoriesMobile;
 window.showPreferitiMobile = showPreferitiMobile;
 window.showCategoryContentMobile = showCategoryContentMobile;
+window.showContinuaMobile = showContinuaMobile;
 window.openMobilePlayer = openMobilePlayer;
 window.playItemMobile = playItemMobile;
 window.toggleFavoriteMobile = toggleFavoriteMobile;
@@ -52,19 +56,5 @@ window.prevTVPageMobile = prevTVPageMobile;
 window.nextTVPageMobile = nextTVPageMobile;
 window.applyMovieFilterMobile = applyMovieFilterMobile;
 window.applyTVFilterMobile = applyTVFilterMobile;
-window.toggleControls = toggleControls;
-window.refreshMobilePlayerControls = refreshMobilePlayerControls;
-window.showMobileQualitySelector = showMobileQualitySelector;
-window.showMobileAudioSelector = showMobileAudioSelector;
-window.showMobileSubtitleSelector = showMobileSubtitleSelector;
-window.changeMobileQuality = changeMobileQuality;
-window.changeMobileAudio = changeMobileAudio;
-window.changeMobileSubtitle = changeMobileSubtitle;
-window.showContinuaMobile = showContinuaMobile;
-window.loadContinuaMobile = loadContinuaMobile;
-window.resumeWatching = resumeWatching;
-window.removeContinuaItem = removeContinuaItem;
-window.applyCategoryFilterMobile = applyCategoryFilterMobile;
-window.resetCategoryFilterMobile = resetCategoryFilterMobile;
-window.prevCategoryPageMobile = prevCategoryPageMobile;
-window.nextCategoryPageMobile = nextCategoryPageMobile;
+window.playContinueItem = playContinueItem;
+window.removeContinueItem = removeContinueItem;

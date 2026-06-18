@@ -217,8 +217,6 @@ function updateContinuaVisione() {
     }
 }
 
-// Esponi la funzione globalmente
 window.showContinuaMobile = showContinuaMobile;
 window.playContinueItem = playContinueItem;
 window.removeContinueItem = removeContinueItem;
-window.handlePlayClick = handlePlayClick;
